@@ -2,6 +2,8 @@ import SwiftUI
 
 struct FileCommands: Commands {
     @FocusedValue(\.markdownDocument) private var focusedDocument
+    @AppStorage(EditorStyleSettings.fontFamilyKey) private var editorFontFamily: String = EditorStyleSettings.defaultFontFamily
+    @AppStorage(EditorStyleSettings.fontSizeKey) private var editorFontSize: Double = EditorStyleSettings.defaultFontSize
     let appDelegate: AppDelegate
 
     var body: some Commands {
@@ -34,6 +36,39 @@ struct FileCommands: Commands {
             }
             .keyboardShortcut("s", modifiers: [.command, .shift])
             .disabled(focusedDocument == nil)
+        }
+
+        CommandMenu("字体") {
+            Menu("选择字体") {
+                ForEach(EditorStyleSettings.fontCandidates, id: \.self) { family in
+                    Button {
+                        editorFontFamily = family
+                    } label: {
+                        if editorFontFamily == family {
+                            Label(family, systemImage: "checkmark")
+                        } else {
+                            Text(family)
+                        }
+                    }
+                }
+            }
+
+            Divider()
+
+            Button("增大字号") {
+                editorFontSize = min(EditorStyleSettings.maxFontSize, editorFontSize + 1)
+            }
+            .keyboardShortcut("=", modifiers: .command)
+
+            Button("减小字号") {
+                editorFontSize = max(EditorStyleSettings.minFontSize, editorFontSize - 1)
+            }
+            .keyboardShortcut("-", modifiers: .command)
+
+            Button("重置字号") {
+                editorFontSize = EditorStyleSettings.defaultFontSize
+            }
+            .keyboardShortcut("0", modifiers: .command)
         }
     }
 }
