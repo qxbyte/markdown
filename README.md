@@ -51,6 +51,40 @@ xed .
 
 首次打开 Xcode 会自动解析 Down 依赖，等待完成后选 `MarkdownEditor` Scheme 运行即可。
 
+## 发布安装包（DMG / PKG）
+
+本项目已内置 GitHub Actions 自动发布流程。目标是让用户在 GitHub Releases 的 `Assets` 中直接下载：
+
+- `MarkdownEditor-<version>.dmg`
+- `MarkdownEditor-<version>.pkg`
+
+### 自动发布（推荐）
+
+1. 推送一个 `v` 前缀 tag：
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+2. GitHub Actions 会自动执行 `.github/workflows/release.yml`，构建并上传 DMG/PKG 到对应 Release。
+
+### 手动触发发布
+
+- 在 GitHub 仓库的 `Actions` 页面，手动运行 `Build Release Assets` workflow。
+- 输入版本号（如 `v1.0.0`）后会创建/更新对应 Release 并上传安装包。
+
+### 本地构建发布产物
+
+```bash
+./scripts/build-release-assets.sh v1.0.0
+```
+
+产物输出目录：
+
+- `dist/MarkdownEditor-1.0.0.dmg`
+- `dist/MarkdownEditor-1.0.0.pkg`
+
 ## 功能
 
 - [x] Editor / Editor and Preview / Preview 三模式切换
