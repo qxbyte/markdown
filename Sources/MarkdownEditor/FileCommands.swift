@@ -26,16 +26,14 @@ struct FileCommands: Commands {
 
         CommandGroup(replacing: .saveItem) {
             Button("保存") {
-                focusedDocument?.save()
+                appDelegate.saveCurrentDocument(preferredDocument: focusedDocument)
             }
             .keyboardShortcut("s", modifiers: .command)
-            .disabled(!(focusedDocument?.isDirty ?? false))
 
             Button("另存为…") {
-                focusedDocument?.saveAs()
+                appDelegate.saveAsCurrentDocument(preferredDocument: focusedDocument)
             }
             .keyboardShortcut("s", modifiers: [.command, .shift])
-            .disabled(focusedDocument == nil)
         }
 
         CommandMenu("Font") {
