@@ -1,5 +1,21 @@
 .DS_Store
+
+# Build outputs
 .build/
 dist/
+
+# SwiftPM / Xcode user data
 .swiftpm/xcode/package.xcworkspace/xcuserdata/
 .swiftpm/xcode/xcuserdata/
+*.xcuserstate
+*.xcuserdata/
+DerivedData/
+
+# IDE / editor temp files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log
