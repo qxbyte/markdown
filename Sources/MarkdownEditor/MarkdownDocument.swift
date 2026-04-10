@@ -63,9 +63,20 @@ final class MarkdownDocument: ObservableObject {
     // MARK: - Private
 
     private func write(to url: URL) {
-        try? text.write(to: url, atomically: true, encoding: .utf8)
-        savedText = text
-        isDirty   = false
+        do {
+            try text.write(to: url, atomically: true, encoding: .utf8)
+            savedText = text
+            isDirty   = false
+        } catch {
+            isDirty = true
+
+            let alert = NSAlert()
+            alert.alertStyle = .warning
+            alert.messageText = "保存失败"
+            alert.informativeText = "无法写入文件：\(url.path)\n\(error.localizedDescription)"
+            alert.addButton(withTitle: "确定")
+            alert.runModal()
+        }
     }
 
 }
