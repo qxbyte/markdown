@@ -19,3 +19,6 @@ DerivedData/
 
 # Logs
 *.log
+
+# Local-only project instructions
+AGENTS.md
