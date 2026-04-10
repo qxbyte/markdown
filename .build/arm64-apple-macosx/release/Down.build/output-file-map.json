@@ -1,0 +1,403 @@
+{
+  "": {
+    "dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Down.d",
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Down.o",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/primary.swiftdeps"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Nodes/BaseNode.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/BaseNode.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/BaseNode~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/BaseNode.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/BaseNode.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Nodes/BlockQuote.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/BlockQuote.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/BlockQuote~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/BlockQuote.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/BlockQuote.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Nodes/ChildSequence.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/ChildSequence.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/ChildSequence~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/ChildSequence.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/ChildSequence.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Nodes/Code.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Code.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Code~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Code.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Code.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Nodes/CodeBlock.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/CodeBlock.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/CodeBlock~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/CodeBlock.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/CodeBlock.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Nodes/CustomBlock.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/CustomBlock.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/CustomBlock~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/CustomBlock.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/CustomBlock.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Nodes/CustomInline.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/CustomInline.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/CustomInline~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/CustomInline.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/CustomInline.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Nodes/Document.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Document.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Document~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Document.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Document.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Nodes/Emphasis.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Emphasis.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Emphasis~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Emphasis.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Emphasis.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Nodes/Heading.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Heading.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Heading~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Heading.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Heading.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Nodes/HtmlBlock.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/HtmlBlock.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/HtmlBlock~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/HtmlBlock.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/HtmlBlock.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Nodes/HtmlInline.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/HtmlInline.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/HtmlInline~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/HtmlInline.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/HtmlInline.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Nodes/Image.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Image.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Image~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Image.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Image.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Nodes/Item.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Item.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Item~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Item.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Item.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Nodes/LineBreak.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/LineBreak.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/LineBreak~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/LineBreak.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/LineBreak.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Nodes/Link.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Link.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Link~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Link.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Link.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Nodes/List.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/List.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/List~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/List.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/List.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Nodes/Node.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Node.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Node~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Node.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Node.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Nodes/Paragraph.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Paragraph.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Paragraph~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Paragraph.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Paragraph.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Nodes/SoftBreak.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/SoftBreak.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/SoftBreak~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/SoftBreak.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/SoftBreak.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Nodes/Strong.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Strong.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Strong~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Strong.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Strong.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Nodes/Text.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Text.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Text~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Text.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Text.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Nodes/ThematicBreak.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/ThematicBreak.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/ThematicBreak~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/ThematicBreak.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/ThematicBreak.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Styling/Attribute Collections/ColorCollection.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/ColorCollection.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/ColorCollection~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/ColorCollection.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/ColorCollection.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Styling/Attribute Collections/FontCollection.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/FontCollection.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/FontCollection~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/FontCollection.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/FontCollection.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Styling/Attribute Collections/ParagraphStyleCollection.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/ParagraphStyleCollection.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/ParagraphStyleCollection~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/ParagraphStyleCollection.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/ParagraphStyleCollection.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Styling/Custom Attributes/BlockBackgroundColorAttribute.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/BlockBackgroundColorAttribute.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/BlockBackgroundColorAttribute~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/BlockBackgroundColorAttribute.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/BlockBackgroundColorAttribute.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Styling/Custom Attributes/QuoteStripeAttribute.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/QuoteStripeAttribute.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/QuoteStripeAttribute~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/QuoteStripeAttribute.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/QuoteStripeAttribute.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Styling/Custom Attributes/ThematicBreakAttribute.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/ThematicBreakAttribute.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/ThematicBreakAttribute~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/ThematicBreakAttribute.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/ThematicBreakAttribute.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Styling/Helpers/Extensions/CGPoint+Translate.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/CGPoint+Translate.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/CGPoint+Translate~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/CGPoint+Translate.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/CGPoint+Translate.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Styling/Helpers/Extensions/CGRect+Helpers.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/CGRect+Helpers.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/CGRect+Helpers~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/CGRect+Helpers.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/CGRect+Helpers.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Styling/Helpers/Extensions/NSAttributedString+Helpers.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/NSAttributedString+Helpers.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/NSAttributedString+Helpers~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/NSAttributedString+Helpers.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/NSAttributedString+Helpers.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Styling/Helpers/Extensions/NSMutableAttributedString+Attributes.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/NSMutableAttributedString+Attributes.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/NSMutableAttributedString+Attributes~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/NSMutableAttributedString+Attributes.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/NSMutableAttributedString+Attributes.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Styling/Helpers/Extensions/UIFont+Traits.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/UIFont+Traits.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/UIFont+Traits~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/UIFont+Traits.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/UIFont+Traits.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Styling/Helpers/ListItemParagraphStyler.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/ListItemParagraphStyler.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/ListItemParagraphStyler~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/ListItemParagraphStyler.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/ListItemParagraphStyler.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Styling/Layout Managers/DownDebugLayoutManager.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownDebugLayoutManager.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownDebugLayoutManager~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownDebugLayoutManager.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownDebugLayoutManager.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Styling/Layout Managers/DownLayoutManager.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownLayoutManager.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownLayoutManager~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownLayoutManager.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownLayoutManager.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Styling/Options/CodeBlockOptions.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/CodeBlockOptions.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/CodeBlockOptions~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/CodeBlockOptions.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/CodeBlockOptions.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Styling/Options/ListItemOptions.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/ListItemOptions.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/ListItemOptions~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/ListItemOptions.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/ListItemOptions.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Styling/Options/QuoteStripeOptions.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/QuoteStripeOptions.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/QuoteStripeOptions~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/QuoteStripeOptions.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/QuoteStripeOptions.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Styling/Options/ThematicBreakOptions.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/ThematicBreakOptions.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/ThematicBreakOptions~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/ThematicBreakOptions.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/ThematicBreakOptions.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Styling/Stylers/DownStyler.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownStyler.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownStyler~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownStyler.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownStyler.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Styling/Stylers/DownStylerConfiguration.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownStylerConfiguration.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownStylerConfiguration~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownStylerConfiguration.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownStylerConfiguration.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Styling/Stylers/Styler.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Styler.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Styler~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Styler.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Styler.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Styling/Text Views/DownDebugTextView.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownDebugTextView.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownDebugTextView~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownDebugTextView.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownDebugTextView.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Styling/Text Views/DownTextView.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownTextView.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownTextView~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownTextView.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownTextView.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Visitors/AttributedStringVisitor.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/AttributedStringVisitor.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/AttributedStringVisitor~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/AttributedStringVisitor.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/AttributedStringVisitor.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Visitors/DebugVisitor.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DebugVisitor.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DebugVisitor~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DebugVisitor.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DebugVisitor.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Visitors/ListItemPrefixGenerator.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/ListItemPrefixGenerator.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/ListItemPrefixGenerator~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/ListItemPrefixGenerator.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/ListItemPrefixGenerator.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/AST/Visitors/Visitor.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Visitor.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Visitor~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Visitor.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Visitor.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/Down.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Down.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Down~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Down.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/Down.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/Enums & Options/DownErrors.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownErrors.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownErrors~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownErrors.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownErrors.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/Enums & Options/DownOptions.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownOptions.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownOptions~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownOptions.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownOptions.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/Extensions/NSAttributedString+HTML.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/NSAttributedString+HTML.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/NSAttributedString+HTML~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/NSAttributedString+HTML.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/NSAttributedString+HTML.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/Extensions/String+ToHTML.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/String+ToHTML.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/String+ToHTML~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/String+ToHTML.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/String+ToHTML.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/Renderers/DownASTRenderable.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownASTRenderable.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownASTRenderable~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownASTRenderable.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownASTRenderable.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/Renderers/DownAttributedStringRenderable.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownAttributedStringRenderable.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownAttributedStringRenderable~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownAttributedStringRenderable.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownAttributedStringRenderable.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/Renderers/DownCommonMarkRenderable.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownCommonMarkRenderable.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownCommonMarkRenderable~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownCommonMarkRenderable.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownCommonMarkRenderable.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/Renderers/DownGroffRenderable.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownGroffRenderable.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownGroffRenderable~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownGroffRenderable.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownGroffRenderable.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/Renderers/DownHTMLRenderable.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownHTMLRenderable.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownHTMLRenderable~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownHTMLRenderable.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownHTMLRenderable.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/Renderers/DownLaTeXRenderable.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownLaTeXRenderable.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownLaTeXRenderable~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownLaTeXRenderable.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownLaTeXRenderable.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/Renderers/DownRenderable.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownRenderable.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownRenderable~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownRenderable.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownRenderable.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/Renderers/DownXMLRenderable.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownXMLRenderable.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownXMLRenderable~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownXMLRenderable.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownXMLRenderable.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/Views/BundleHelper.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/BundleHelper.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/BundleHelper~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/BundleHelper.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/BundleHelper.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/checkouts/Down/Sources/Down/Views/DownView.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownView.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownView~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownView.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DownView.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/DerivedSources/resource_bundle_accessor.swift": {
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/resource_bundle_accessor.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/resource_bundle_accessor~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/resource_bundle_accessor.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/release/Down.build/resource_bundle_accessor.dia"
+  }
+}

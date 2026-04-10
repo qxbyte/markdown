@@ -1,0 +1,75 @@
+{
+  "": {
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/primary.swiftdeps"
+  },
+  "/Users/xueqiang/Git/markdown/Sources/MarkdownEditor/AppDelegate.swift": {
+    "dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/AppDelegate.d",
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/AppDelegate.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/AppDelegate~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/AppDelegate.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/AppDelegate.dia"
+  },
+  "/Users/xueqiang/Git/markdown/Sources/MarkdownEditor/ContentView.swift": {
+    "dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/ContentView.d",
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/ContentView.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/ContentView~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/ContentView.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/ContentView.dia"
+  },
+  "/Users/xueqiang/Git/markdown/Sources/MarkdownEditor/FileCommands.swift": {
+    "dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/FileCommands.d",
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/FileCommands.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/FileCommands~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/FileCommands.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/FileCommands.dia"
+  },
+  "/Users/xueqiang/Git/markdown/Sources/MarkdownEditor/MarkdownDocument.swift": {
+    "dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/MarkdownDocument.d",
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/MarkdownDocument.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/MarkdownDocument~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/MarkdownDocument.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/MarkdownDocument.dia"
+  },
+  "/Users/xueqiang/Git/markdown/Sources/MarkdownEditor/MarkdownEditorApp.swift": {
+    "dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/MarkdownEditorApp.d",
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/MarkdownEditorApp.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/MarkdownEditorApp~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/MarkdownEditorApp.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/MarkdownEditorApp.dia"
+  },
+  "/Users/xueqiang/Git/markdown/Sources/MarkdownEditor/MarkdownPreviewView.swift": {
+    "dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/MarkdownPreviewView.d",
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/MarkdownPreviewView.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/MarkdownPreviewView~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/MarkdownPreviewView.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/MarkdownPreviewView.dia"
+  },
+  "/Users/xueqiang/Git/markdown/Sources/MarkdownEditor/MarkdownProcessor.swift": {
+    "dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/MarkdownProcessor.d",
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/MarkdownProcessor.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/MarkdownProcessor~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/MarkdownProcessor.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/MarkdownProcessor.dia"
+  },
+  "/Users/xueqiang/Git/markdown/Sources/MarkdownEditor/MarkdownSyntaxHighlighter.swift": {
+    "dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/MarkdownSyntaxHighlighter.d",
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/MarkdownSyntaxHighlighter.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/MarkdownSyntaxHighlighter~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/MarkdownSyntaxHighlighter.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/MarkdownSyntaxHighlighter.dia"
+  },
+  "/Users/xueqiang/Git/markdown/Sources/MarkdownEditor/MarkdownTextEditor.swift": {
+    "dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/MarkdownTextEditor.d",
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/MarkdownTextEditor.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/MarkdownTextEditor~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/MarkdownTextEditor.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/MarkdownTextEditor.dia"
+  },
+  "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/DerivedSources/resource_bundle_accessor.swift": {
+    "dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/resource_bundle_accessor.d",
+    "object": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/resource_bundle_accessor.swift.o",
+    "swiftmodule": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/resource_bundle_accessor~partial.swiftmodule",
+    "swift-dependencies": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/resource_bundle_accessor.swiftdeps",
+    "diagnostics": "/Users/xueqiang/Git/markdown/.build/arm64-apple-macosx/debug/MarkdownEditor.build/resource_bundle_accessor.dia"
+  }
+}

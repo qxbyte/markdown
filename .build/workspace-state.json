@@ -1,0 +1,30 @@
+{
+  "object" : {
+    "artifacts" : [
+
+    ],
+    "dependencies" : [
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "down",
+          "kind" : "remoteSourceControl",
+          "location" : "https://github.com/johnxnguyen/Down.git",
+          "name" : "Down"
+        },
+        "state" : {
+          "checkoutState" : {
+            "revision" : "f34b166be1f1db4aa8f573067e901d72f2a6be57",
+            "version" : "0.11.0"
+          },
+          "name" : "sourceControlCheckout"
+        },
+        "subpath" : "Down"
+      }
+    ],
+    "prebuilts" : [
+
+    ]
+  },
+  "version" : 7
+}
