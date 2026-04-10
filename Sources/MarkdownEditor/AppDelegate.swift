@@ -31,8 +31,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func currentDocument() -> MarkdownDocument? {
+        if let window = NSApp.keyWindow ?? NSApp.mainWindow {
+            let key = ObjectIdentifier(window)
+            if let doc = windowDocuments[key]?.value {
+                return doc
+            }
+        }
         if let activeDocument { return activeDocument }
         return documents.allObjects.compactMap { $0 as? MarkdownDocument }.last
+    }
+
+    func saveCurrentDocument(preferredDocument: MarkdownDocument? = nil) {
+        (preferredDocument ?? currentDocument())?.save()
+    }
+
+    func saveAsCurrentDocument(preferredDocument: MarkdownDocument? = nil) {
+        (preferredDocument ?? currentDocument())?.saveAs()
     }
 
     func open(url: URL, preferredDocument: MarkdownDocument? = nil) {

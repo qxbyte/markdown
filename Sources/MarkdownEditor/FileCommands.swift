@@ -5,9 +5,6 @@ struct FileCommands: Commands {
     @AppStorage(EditorStyleSettings.fontFamilyKey) private var editorFontFamily: String = EditorStyleSettings.defaultFontFamily
     @AppStorage(EditorStyleSettings.fontSizeKey) private var editorFontSize: Double = EditorStyleSettings.defaultFontSize
     let appDelegate: AppDelegate
-    private var targetDocument: MarkdownDocument? {
-        focusedDocument ?? appDelegate.currentDocument()
-    }
 
     var body: some Commands {
         CommandGroup(replacing: .newItem) {
@@ -29,16 +26,14 @@ struct FileCommands: Commands {
 
         CommandGroup(replacing: .saveItem) {
             Button("保存") {
-                targetDocument?.save()
+                appDelegate.saveCurrentDocument(preferredDocument: focusedDocument)
             }
             .keyboardShortcut("s", modifiers: .command)
-            .disabled(!(targetDocument?.isDirty ?? false))
 
             Button("另存为…") {
-                targetDocument?.saveAs()
+                appDelegate.saveAsCurrentDocument(preferredDocument: focusedDocument)
             }
             .keyboardShortcut("s", modifiers: [.command, .shift])
-            .disabled(targetDocument == nil)
         }
 
         CommandMenu("Font") {
