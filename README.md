@@ -31,7 +31,7 @@ Sources/MarkdownEditor/
 
 ## 字体设置
 
-- 菜单路径：`字体` -> `选择字体`
+- 菜单路径：`Font` -> `Choose Font`
 - 支持字体：JetBrains Mono / SF Mono / Menlo / Monaco / Courier New / Fira Code
 - 字号快捷键：
   - `⌘=` 增大字号

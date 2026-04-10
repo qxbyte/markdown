@@ -38,8 +38,8 @@ struct FileCommands: Commands {
             .disabled(focusedDocument == nil)
         }
 
-        CommandMenu("字体") {
-            Menu("选择字体") {
+        CommandMenu("Font") {
+            Menu("Choose Font") {
                 ForEach(EditorStyleSettings.fontCandidates, id: \.self) { family in
                     Button {
                         editorFontFamily = family
@@ -55,17 +55,17 @@ struct FileCommands: Commands {
 
             Divider()
 
-            Button("增大字号") {
+            Button("Increase Size") {
                 editorFontSize = min(EditorStyleSettings.maxFontSize, editorFontSize + 1)
             }
             .keyboardShortcut("=", modifiers: .command)
 
-            Button("减小字号") {
+            Button("Decrease Size") {
                 editorFontSize = max(EditorStyleSettings.minFontSize, editorFontSize - 1)
             }
             .keyboardShortcut("-", modifiers: .command)
 
-            Button("重置字号") {
+            Button("Reset Size") {
                 editorFontSize = EditorStyleSettings.defaultFontSize
             }
             .keyboardShortcut("0", modifiers: .command)
