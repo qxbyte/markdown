@@ -22,3 +22,6 @@ DerivedData/
 
 # Local-only project instructions
 AGENTS.md
+
+# Local Claude workspace metadata
+.claude/
