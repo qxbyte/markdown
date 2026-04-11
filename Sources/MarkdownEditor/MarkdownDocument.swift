@@ -60,15 +60,9 @@ final class MarkdownDocument: ObservableObject {
         write(to: url)
     }
 
-    func save(to url: URL, isExecutable: Bool = false) {
+    func save(to url: URL) {
         fileURL = url
         write(to: url)
-        if isExecutable {
-            try? FileManager.default.setAttributes(
-                [.posixPermissions: 0o755],
-                ofItemAtPath: url.path
-            )
-        }
     }
 
     // MARK: - Private

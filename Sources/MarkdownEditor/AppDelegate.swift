@@ -177,22 +177,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let view = SaveCloseSheetView(
             defaultFileName: defaultFileName,
             defaultLocation: defaultLocation,
-            onDelete: { [weak self, weak window] in
-                guard let self, let window else { return }
+            onDelete: { [weak window] in
+                guard let window else { return }
                 if let s = sheet { window.endSheet(s) }
-                self.windowsPendingClose.insert(windowKey)
-                window.performClose(nil)
+                // 直接关闭当前窗口，不触发 windowShouldClose
+                window.close()
             },
             onCancel: { [weak window] in
                 guard let window, let s = sheet else { return }
                 window.endSheet(s)
             },
-            onSave: { [weak self, weak window] url, isExecutable in
-                guard let self, let window else { return }
-                document.save(to: url, isExecutable: isExecutable)
+            onSave: { [weak window] url, tags in
+                guard let window else { return }
+                document.save(to: url)
+                // 将 Finder 标签写入文件扩展属性
+                let tagNames = tags.map { $0.rawValue }
+                if !tagNames.isEmpty {
+                    try? (url as NSURL).setResourceValue(tagNames, forKey: .tagNamesKey)
+                }
                 if let s = sheet { window.endSheet(s) }
-                self.windowsPendingClose.insert(windowKey)
-                window.performClose(nil)
+                window.close()
             }
         )
 
@@ -215,18 +219,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         alert.addButton(withTitle: "不保存")
         alert.addButton(withTitle: "取消")
 
-        alert.beginSheetModal(for: window) { [weak self] response in
-            guard let self else { return }
+        alert.beginSheetModal(for: window) { response in
             switch response {
             case .alertFirstButtonReturn:
                 document.save()
+                window.close()
             case .alertSecondButtonReturn:
-                break
+                window.close()
             default:
-                return
+                break
             }
-            windowsPendingClose.insert(windowKey)
-            window.performClose(nil)
         }
     }
 }
