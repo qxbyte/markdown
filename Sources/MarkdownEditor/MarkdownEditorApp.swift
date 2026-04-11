@@ -47,10 +47,7 @@ private struct WindowAccessor: NSViewRepresentable {
     }
 
     func updateNSView(_ nsView: NSView, context: Context) {
-        DispatchQueue.main.async {
-            if let window = nsView.window {
-                onResolve(window)
-            }
-        }
+        // window 引用在视图生命周期内稳定，updateNSView 不重复回调
+        // 避免 SwiftUI 每次重渲染（如 isDirty 变化）都触发 registerWindow
     }
 }

@@ -1,6 +1,12 @@
 import AppKit
 import SwiftUI
 
+private enum DocumentCloseAction {
+    case delete
+    case save(URL)
+    case cancel
+}
+
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     private final class WeakDocumentBox {
@@ -101,12 +107,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             }
             windowObservationTokens[id] = token
             window.delegate = self
-        }
 
-        DispatchQueue.main.async {
-            NSApp.activate(ignoringOtherApps: true)
-            window.makeKeyAndOrderFront(nil)
-            window.orderFrontRegardless()
+            // 仅在窗口首次创建时激活并置前，避免后续每次 SwiftUI 更新都重复触发
+            DispatchQueue.main.async {
+                NSApp.activate(ignoringOtherApps: true)
+                window.makeKeyAndOrderFront(nil)
+                window.orderFrontRegardless()
+            }
         }
     }
 
@@ -148,11 +155,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func windowShouldClose(_ sender: NSWindow) -> Bool {
         let key = ObjectIdentifier(sender)
 
-        guard let doc = windowDocuments[key]?.value else { return true }
-
-        if !doc.isDirty {
+        // 用户已在弹窗中确认操作，直接放行
+        if windowsPendingClose.contains(key) {
             return true
         }
+
+        guard let doc = windowDocuments[key]?.value else { return true }
+        if !doc.isDirty { return true }
 
         if doc.fileURL == nil {
             showNewDocumentCloseSheet(for: sender, document: doc, windowKey: key)
@@ -173,37 +182,48 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let defaultFileName = document.displayName + ".md"
 
         var sheet: NSWindow?
+        // 用枚举记录用户的选择，在 beginSheet completion handler 里统一处理
+        // 这与 NSAlert.beginSheetModal 的模式完全一致，保证 sheet 动画结束后再关窗口
+        var pendingAction: DocumentCloseAction = .cancel
 
         let view = SaveCloseSheetView(
             defaultFileName: defaultFileName,
             defaultLocation: defaultLocation,
             onDelete: { [weak window] in
-                guard let window else { return }
-                if let s = sheet { window.endSheet(s) }
-                // 直接关闭当前窗口，不触发 windowShouldClose
-                window.close()
+                guard let window, let s = sheet else { return }
+                pendingAction = .delete
+                window.endSheet(s, returnCode: .abort)
             },
             onCancel: { [weak window] in
                 guard let window, let s = sheet else { return }
-                window.endSheet(s)
+                window.endSheet(s, returnCode: .cancel)
             },
-            onSave: { [weak window] url, tags in
-                guard let window else { return }
-                document.save(to: url)
-                // 将 Finder 标签写入文件扩展属性
-                let tagNames = tags.map { $0.rawValue }
-                if !tagNames.isEmpty {
-                    try? (url as NSURL).setResourceValue(tagNames, forKey: .tagNamesKey)
-                }
-                if let s = sheet { window.endSheet(s) }
-                window.close()
+            onSave: { [weak window] url in
+                guard let window, let s = sheet else { return }
+                pendingAction = .save(url)
+                window.endSheet(s, returnCode: .OK)
             }
         )
 
         let controller = NSHostingController(rootView: view)
         let sheetWindow = NSWindow(contentViewController: controller)
         sheet = sheetWindow
-        window.beginSheet(sheetWindow)
+
+        // completion handler 在 sheet 动画完全结束后才触发
+        window.beginSheet(sheetWindow) { [weak self, weak window] _ in
+            guard let self, let window else { return }
+            switch pendingAction {
+            case .delete:
+                self.windowsPendingClose.insert(windowKey)
+                window.performClose(nil)
+            case .save(let url):
+                document.save(to: url)
+                self.windowsPendingClose.insert(windowKey)
+                window.performClose(nil)
+            case .cancel:
+                break
+            }
+        }
     }
 
     private func showUnsavedChangesAlert(
@@ -219,13 +239,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         alert.addButton(withTitle: "不保存")
         alert.addButton(withTitle: "取消")
 
-        alert.beginSheetModal(for: window) { response in
+        alert.beginSheetModal(for: window) { [weak self] response in
+            guard let self else { return }
             switch response {
             case .alertFirstButtonReturn:
                 document.save()
-                window.close()
+                self.windowsPendingClose.insert(windowKey)
+                window.performClose(nil)
             case .alertSecondButtonReturn:
-                window.close()
+                self.windowsPendingClose.insert(windowKey)
+                window.performClose(nil)
             default:
                 break
             }

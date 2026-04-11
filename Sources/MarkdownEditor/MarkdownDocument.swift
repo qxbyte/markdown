@@ -65,6 +65,10 @@ final class MarkdownDocument: ObservableObject {
         write(to: url)
     }
 
+    func discardChanges() {
+        isDirty = false
+    }
+
     // MARK: - Private
 
     private func write(to url: URL) {
