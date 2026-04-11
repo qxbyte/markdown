@@ -1,6 +1,6 @@
 import AppKit
 
-final class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     private final class WeakDocumentBox {
         weak var value: MarkdownDocument?
@@ -14,6 +14,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var cascadeSeedTopLeft: NSPoint?
     private weak var activeDocument: MarkdownDocument?
     private var pendingURL: URL?
+    private var windowsPendingClose: Set<ObjectIdentifier> = []
 
     func registerDocument(_ doc: MarkdownDocument) {
         if !documents.allObjects.contains(where: { $0 === doc }) {
@@ -98,6 +99,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             }
             windowObservationTokens[id] = token
+            window.delegate = self
         }
 
         DispatchQueue.main.async {
@@ -131,5 +133,48 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         for (_, token) in windowObservationTokens {
             NotificationCenter.default.removeObserver(token)
         }
+    }
+
+    // MARK: - NSWindowDelegate
+
+    func windowWillClose(_ notification: Notification) {
+        guard let window = notification.object as? NSWindow else { return }
+        let key = ObjectIdentifier(window)
+        windowsPendingClose.remove(key)
+        windowDocuments.removeValue(forKey: key)
+    }
+
+    func windowShouldClose(_ sender: NSWindow) -> Bool {
+        let key = ObjectIdentifier(sender)
+
+        guard let doc = windowDocuments[key]?.value else { return true }
+
+        if !doc.isDirty {
+            return true
+        }
+
+        let alert = NSAlert()
+        alert.messageText = "Markdown Editor"
+        alert.informativeText = "Do you want to save changes before closing?"
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "Save")
+        alert.addButton(withTitle: "Don't Save")
+        alert.addButton(withTitle: "Cancel")
+
+        alert.beginSheetModal(for: sender) { [weak self] response in
+            guard let self else { return }
+            switch response {
+            case .alertFirstButtonReturn:
+                doc.save()
+            case .alertSecondButtonReturn:
+                break
+            default:
+                return
+            }
+            windowsPendingClose.insert(key)
+            sender.performClose(nil)
+        }
+
+        return false
     }
 }
