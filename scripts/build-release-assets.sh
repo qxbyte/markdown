@@ -14,7 +14,9 @@ if [[ -z "${VERSION_INPUT}" ]]; then
 fi
 VERSION="${VERSION_INPUT#v}"
 
-ICON_SRC="${ICON_SRC:-${HOME}/Desktop/markdown.png}"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+ICON_SRC="${ICON_SRC:-${PROJECT_ROOT}/assets/app-icon.png}"
 
 echo "▶ Building release binary..."
 swift build -c release
