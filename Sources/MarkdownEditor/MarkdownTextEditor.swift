@@ -68,8 +68,31 @@ struct MarkdownTextEditor: NSViewRepresentable {
         var isUpdating = false
         var highlighter: MarkdownSyntaxHighlighter?
         var currentFontToken = ""
+        weak var textView: NSTextView?
+
+        private var selectionPopover: NSPopover?
+        private var selectionPopoverController: SelectionToolbarViewController?
+        private var pendingPopoverWorkItem: DispatchWorkItem?
+        private var keyMonitor: Any?
+        private weak var observedClipView: NSClipView?
 
         init(_ parent: MarkdownTextEditor) { self.parent = parent }
+
+        deinit {
+            if let monitor = keyMonitor {
+                NSEvent.removeMonitor(monitor)
+            }
+            if let clipView = observedClipView {
+                NotificationCenter.default.removeObserver(self, name: NSView.boundsDidChangeNotification, object: clipView)
+            }
+            NotificationCenter.default.removeObserver(self)
+        }
+
+        func bind(textView: NSTextView) {
+            self.textView = textView
+            setupSelectionObserversIfNeeded(for: textView)
+            setupKeyMonitorIfNeeded()
+        }
 
         func textDidChange(_ notification: Notification) {
             guard !isUpdating, let tv = notification.object as? NSTextView else { return }
@@ -78,6 +101,7 @@ struct MarkdownTextEditor: NSViewRepresentable {
                 highlighter?.highlight(storage)
             }
             parent.text = tv.string
+            scheduleSelectionToolbar(for: tv)
         }
 
         func textDidEndEditing(_ notification: Notification) {
@@ -86,6 +110,12 @@ struct MarkdownTextEditor: NSViewRepresentable {
                 highlighter?.highlight(storage)
             }
             parent.text = tv.string
+            hideSelectionToolbar()
+        }
+
+        func textViewDidChangeSelection(_ notification: Notification) {
+            guard let tv = notification.object as? NSTextView else { return }
+            scheduleSelectionToolbar(for: tv)
         }
 
         func textView(_ textView: NSTextView, clickedOnLink link: Any, at charIndex: Int) -> Bool {
@@ -100,11 +130,320 @@ struct MarkdownTextEditor: NSViewRepresentable {
             }
             return false
         }
+
+        func textView(_ textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
+            if commandSelector == #selector(NSResponder.cancelOperation(_:)) {
+                hideSelectionToolbar()
+                return false
+            }
+            return false
+        }
+
+        @objc private func clipViewBoundsDidChange(_ notification: Notification) {
+            hideSelectionToolbar()
+        }
+
+        private func setupSelectionObserversIfNeeded(for textView: NSTextView) {
+            guard observedClipView == nil, let clipView = textView.enclosingScrollView?.contentView else { return }
+            observedClipView = clipView
+            clipView.postsBoundsChangedNotifications = true
+            NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(clipViewBoundsDidChange(_:)),
+                name: NSView.boundsDidChangeNotification,
+                object: clipView
+            )
+        }
+
+        private func setupKeyMonitorIfNeeded() {
+            guard keyMonitor == nil else { return }
+            keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+                guard let self else { return event }
+                guard let tv = self.textView, tv.window?.firstResponder === tv else { return event }
+                guard !tv.hasMarkedText(), tv.selectedRange().length > 0 else { return event }
+                guard self.handleShortcut(event: event, textView: tv) else { return event }
+                return nil
+            }
+        }
+
+        private func handleShortcut(event: NSEvent, textView: NSTextView) -> Bool {
+            let flags = event.modifierFlags.intersection([.command, .shift])
+            guard let chars = event.charactersIgnoringModifiers?.lowercased() else { return false }
+
+            switch (chars, flags) {
+            case ("b", [.command]):
+                apply(.bold, on: textView)
+                return true
+            case ("i", [.command]):
+                apply(.italic, on: textView)
+                return true
+            case ("s", [.command, .shift]):
+                apply(.strikethrough, on: textView)
+                return true
+            case ("c", [.command, .shift]):
+                apply(.code, on: textView)
+                return true
+            case ("u", [.command, .shift]):
+                apply(.link, on: textView)
+                return true
+            default:
+                return false
+            }
+        }
+
+        private func scheduleSelectionToolbar(for textView: NSTextView) {
+            pendingPopoverWorkItem?.cancel()
+            guard textView.selectedRange().length > 0 else {
+                hideSelectionToolbar()
+                return
+            }
+
+            let item = DispatchWorkItem { [weak self, weak textView] in
+                guard let self, let tv = textView else { return }
+                guard tv.selectedRange().length > 0 else {
+                    self.hideSelectionToolbar()
+                    return
+                }
+                self.showSelectionToolbar(for: tv)
+            }
+            pendingPopoverWorkItem = item
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12, execute: item)
+        }
+
+        private func showSelectionToolbar(for textView: NSTextView) {
+            let popover = selectionPopover ?? NSPopover()
+            popover.behavior = .transient
+            popover.animates = true
+
+            if selectionPopoverController == nil {
+                let controller = SelectionToolbarViewController { [weak self] action in
+                    guard let self, let tv = self.textView else { return }
+                    self.apply(action, on: tv)
+                }
+                selectionPopoverController = controller
+                popover.contentViewController = controller
+            }
+
+            guard let rect = selectedRectInTextView(textView) else {
+                hideSelectionToolbar()
+                return
+            }
+
+            if !popover.isShown {
+                popover.show(relativeTo: rect, of: textView, preferredEdge: .maxY)
+            } else {
+                popover.performClose(nil)
+                popover.show(relativeTo: rect, of: textView, preferredEdge: .maxY)
+            }
+            selectionPopover = popover
+        }
+
+        private func hideSelectionToolbar() {
+            pendingPopoverWorkItem?.cancel()
+            pendingPopoverWorkItem = nil
+            selectionPopover?.performClose(nil)
+        }
+
+        private func selectedRectInTextView(_ textView: NSTextView) -> NSRect? {
+            let selected = textView.selectedRange()
+            guard selected.location != NSNotFound, selected.length > 0 else { return nil }
+            guard let layoutManager = textView.layoutManager, let textContainer = textView.textContainer else { return nil }
+            let glyphRange = layoutManager.glyphRange(forCharacterRange: selected, actualCharacterRange: nil)
+            var rect = layoutManager.boundingRect(forGlyphRange: glyphRange, in: textContainer)
+            rect.origin.x += textView.textContainerInset.width
+            rect.origin.y += textView.textContainerInset.height
+            if rect.isEmpty { return nil }
+            return rect
+        }
+
+        private func apply(_ action: SelectionAction, on textView: NSTextView) {
+            switch action {
+            case .bold:
+                toggleWrappedText(prefix: "**", suffix: "**", in: textView)
+            case .italic:
+                toggleWrappedText(prefix: "*", suffix: "*", in: textView)
+            case .strikethrough:
+                toggleWrappedText(prefix: "~~", suffix: "~~", in: textView)
+            case .code:
+                toggleWrappedText(prefix: "`", suffix: "`", in: textView)
+            case .link:
+                createOrToggleLink(in: textView)
+            }
+            scheduleSelectionToolbar(for: textView)
+        }
+
+        private func toggleWrappedText(prefix: String, suffix: String, in textView: NSTextView) {
+            let selected = textView.selectedRange()
+            guard selected.location != NSNotFound, selected.length > 0 else { return }
+            let source = textView.string as NSString
+            let selectedText = source.substring(with: selected)
+            let replacement: String
+            let newSelectionRange: NSRange
+
+            if selectedText.hasPrefix(prefix), selectedText.hasSuffix(suffix), selectedText.count >= prefix.count + suffix.count {
+                let start = selectedText.index(selectedText.startIndex, offsetBy: prefix.count)
+                let end = selectedText.index(selectedText.endIndex, offsetBy: -suffix.count)
+                replacement = String(selectedText[start..<end])
+                newSelectionRange = NSRange(location: selected.location, length: replacement.count)
+            } else {
+                replacement = "\(prefix)\(selectedText)\(suffix)"
+                newSelectionRange = NSRange(location: selected.location + prefix.count, length: selected.length)
+            }
+
+            isUpdating = true
+            textView.textStorage?.replaceCharacters(in: selected, with: replacement)
+            textView.setSelectedRange(newSelectionRange)
+            if let storage = textView.textStorage {
+                highlighter?.highlight(storage)
+            }
+            parent.text = textView.string
+            isUpdating = false
+        }
+
+        private func createOrToggleLink(in textView: NSTextView) {
+            let selected = textView.selectedRange()
+            guard selected.location != NSNotFound, selected.length > 0 else { return }
+            let source = textView.string as NSString
+            let selectedText = source.substring(with: selected)
+
+            if isURLText(selectedText) {
+                replaceSelection(in: textView, range: selected, with: "[\(selectedText)](\(selectedText))", selectInner: selectedText)
+                return
+            }
+
+            let alert = NSAlert()
+            alert.alertStyle = .informational
+            alert.messageText = "创建链接"
+            alert.informativeText = "请输入链接地址："
+            let input = NSTextField(frame: NSRect(x: 0, y: 0, width: 320, height: 24))
+            input.placeholderString = "https://example.com"
+            input.stringValue = "https://"
+            alert.accessoryView = input
+            alert.addButton(withTitle: "确定")
+            alert.addButton(withTitle: "取消")
+
+            guard alert.runModal() == .alertFirstButtonReturn else { return }
+            let destination = input.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !destination.isEmpty else { return }
+
+            let normalized = normalizeURLString(destination)
+            replaceSelection(in: textView, range: selected, with: "[\(selectedText)](\(normalized))", selectInner: selectedText)
+        }
+
+        private func replaceSelection(in textView: NSTextView, range: NSRange, with replacement: String, selectInner: String) {
+            isUpdating = true
+            textView.textStorage?.replaceCharacters(in: range, with: replacement)
+            if let open = replacement.range(of: selectInner) {
+                let prefixLength = replacement.distance(from: replacement.startIndex, to: open.lowerBound)
+                textView.setSelectedRange(NSRange(location: range.location + prefixLength, length: selectInner.count))
+            }
+            if let storage = textView.textStorage {
+                highlighter?.highlight(storage)
+            }
+            parent.text = textView.string
+            isUpdating = false
+        }
+
+        private func isURLText(_ text: String) -> Bool {
+            let value = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !value.isEmpty else { return false }
+            return value.lowercased().hasPrefix("http://") || value.lowercased().hasPrefix("https://")
+        }
+
+        private func normalizeURLString(_ value: String) -> String {
+            if value.lowercased().hasPrefix("http://") || value.lowercased().hasPrefix("https://") {
+                return value
+            }
+            return "https://\(value)"
+        }
+    }
+
+    private enum SelectionAction {
+        case bold
+        case italic
+        case strikethrough
+        case code
+        case link
+    }
+
+    private final class SelectionToolbarViewController: NSViewController {
+        private let onAction: (SelectionAction) -> Void
+
+        init(onAction: @escaping (SelectionAction) -> Void) {
+            self.onAction = onAction
+            super.init(nibName: nil, bundle: nil)
+        }
+
+        @available(*, unavailable)
+        required init?(coder: NSCoder) { nil }
+
+        override func loadView() {
+            let container = NSView()
+            let blur = NSVisualEffectView()
+            blur.material = .popover
+            blur.blendingMode = .behindWindow
+            blur.state = .active
+            blur.wantsLayer = true
+            blur.layer?.cornerRadius = 14
+            blur.layer?.masksToBounds = true
+            blur.translatesAutoresizingMaskIntoConstraints = false
+
+            let row = NSStackView()
+            row.orientation = .horizontal
+            row.alignment = .centerY
+            row.spacing = 6
+            row.edgeInsets = NSEdgeInsets(top: 6, left: 8, bottom: 6, right: 8)
+            row.translatesAutoresizingMaskIntoConstraints = false
+
+            row.addArrangedSubview(makeIconButton(symbol: "bold", action: #selector(tapBold)))
+            row.addArrangedSubview(makeIconButton(symbol: "italic", action: #selector(tapItalic)))
+            row.addArrangedSubview(makeIconButton(symbol: "strikethrough", action: #selector(tapStrikethrough)))
+            row.addArrangedSubview(makeIconButton(symbol: "chevron.left.forwardslash.chevron.right", action: #selector(tapCode)))
+            row.addArrangedSubview(makeIconButton(symbol: "link", action: #selector(tapLink)))
+
+            blur.addSubview(row)
+            container.addSubview(blur)
+            self.view = container
+
+            NSLayoutConstraint.activate([
+                blur.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+                blur.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+                blur.topAnchor.constraint(equalTo: container.topAnchor),
+                blur.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+
+                row.leadingAnchor.constraint(equalTo: blur.leadingAnchor),
+                row.trailingAnchor.constraint(equalTo: blur.trailingAnchor),
+                row.topAnchor.constraint(equalTo: blur.topAnchor),
+                row.bottomAnchor.constraint(equalTo: blur.bottomAnchor)
+            ])
+        }
+
+        private func makeIconButton(symbol: String, action: Selector) -> NSButton {
+            let config = NSImage.SymbolConfiguration(pointSize: 17, weight: .medium)
+            let image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)?.withSymbolConfiguration(config)
+            let button = NSButton(image: image ?? NSImage(), target: self, action: action)
+            button.bezelStyle = .rounded
+            button.imagePosition = .imageOnly
+            button.contentTintColor = .secondaryLabelColor
+            button.controlSize = .regular
+            button.focusRingType = .none
+            button.translatesAutoresizingMaskIntoConstraints = false
+            button.widthAnchor.constraint(equalToConstant: 34).isActive = true
+            button.heightAnchor.constraint(equalToConstant: 28).isActive = true
+            return button
+        }
+
+        @objc private func tapBold() { onAction(.bold) }
+        @objc private func tapItalic() { onAction(.italic) }
+        @objc private func tapStrikethrough() { onAction(.strikethrough) }
+        @objc private func tapCode() { onAction(.code) }
+        @objc private func tapLink() { onAction(.link) }
     }
 
     // MARK: - Helpers
 
     private func applyEditorStyle(to textView: NSTextView, coordinator: Coordinator) {
+        coordinator.bind(textView: textView)
         let font = editorFont()
         let styleTokens = MarkdownStyleTokens(baseFont: font)
         let fontToken = "\(font.fontName)-\(font.pointSize)"
