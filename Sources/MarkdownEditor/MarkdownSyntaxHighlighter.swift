@@ -4,28 +4,12 @@ import AppKit
 /// 作为 NSTextStorageDelegate 挂载，每次字符变化后自动触发。
 final class MarkdownSyntaxHighlighter: NSObject, NSTextStorageDelegate {
 
-    private let baseFont: NSFont
-    private let boldFont: NSFont
-    private let italicFont: NSFont
-    private let boldItalicFont: NSFont
-    private let codeFont: NSFont
-
-    // MARK: - Init
+    private let tokens: MarkdownStyleTokens
 
     init(baseFont: NSFont) {
-        self.baseFont = baseFont
-        let size = baseFont.pointSize
-        let fm = NSFontManager.shared
-        self.boldFont      = fm.font(withFamily: baseFont.familyName ?? "", traits: .boldFontMask,   weight: 9, size: size) ?? baseFont
-        self.italicFont    = fm.font(withFamily: baseFont.familyName ?? "", traits: .italicFontMask, weight: 5, size: size) ?? baseFont
-        self.boldItalicFont = fm.font(withFamily: baseFont.familyName ?? "", traits: [.boldFontMask, .italicFontMask], weight: 9, size: size) ?? baseFont
-        self.codeFont      = NSFont(name: "JetBrains Mono", size: size)
-                          ?? NSFont(name: "JetBrainsMono-Regular", size: size)
-                          ?? NSFont.monospacedSystemFont(ofSize: size, weight: .regular)
+        self.tokens = MarkdownStyleTokens(baseFont: baseFont)
         super.init()
     }
-
-    // MARK: - NSTextStorageDelegate
 
     func textStorage(_ textStorage: NSTextStorage,
                      didProcessEditing editedMask: NSTextStorageEditActions,
@@ -35,184 +19,292 @@ final class MarkdownSyntaxHighlighter: NSObject, NSTextStorageDelegate {
         highlight(textStorage)
     }
 
-    // MARK: - Core Highlight
-
     func highlight(_ storage: NSTextStorage) {
-        let str     = storage.string
-        guard !str.isEmpty else { return }
-        let nsStr   = str as NSString
-        let full    = NSRange(location: 0, length: nsStr.length)
+        let text = storage.string
+        guard !text.isEmpty else { return }
 
-        // ── 1. 重置为基础样式 ──────────────────────────────────────────────────
-        storage.addAttribute(.font,             value: baseFont,           range: full)
-        storage.addAttribute(.foregroundColor,  value: NSColor.labelColor, range: full)
-        storage.removeAttribute(.backgroundColor,  range: full)
-        storage.removeAttribute(.strikethroughStyle, range: full)
-        storage.removeAttribute(.underlineStyle,  range: full)
+        let nsText = text as NSString
+        let fullRange = NSRange(location: 0, length: nsText.length)
 
-        // 记录代码区域，跳过 inline 规则
+        resetBaseStyle(in: storage, range: fullRange)
+
+        // 记录代码范围，后续 inline 规则跳过
         var excluded = IndexSet()
 
-        // ── 2. 围栏代码块 ``` ~~~ ────────────────────────────────────────────
-        Patterns.fencedCode.enumerateMatches(in: str, range: full) { m, _, _ in
-            guard let r = m?.range, r.length > 0 else { return }
-            storage.addAttribute(.backgroundColor, value: Colors.codeBlockBg, range: r)
-            storage.addAttribute(.font,            value: self.codeFont,      range: r)
-            excluded.insert(integersIn: r.location ..< r.location + r.length)
-        }
+        highlightFencedCode(in: storage, text: text, nsText: nsText, range: fullRange, excluded: &excluded)
+        highlightHeaders(in: storage, text: text, nsText: nsText, range: fullRange)
+        highlightBlockquotes(in: storage, text: text, range: fullRange)
+        highlightListMarkers(in: storage, text: text, range: fullRange)
+        highlightHorizontalRules(in: storage, text: text, range: fullRange)
 
-        // ── 3. 标题 ──────────────────────────────────────────────────────────
-        Patterns.header.enumerateMatches(in: str, range: full) { m, _, _ in
-            guard let match = m, match.numberOfRanges >= 3 else { return }
-            let hashR = match.range(at: 1)
-            let textR = match.range(at: 2)
-            storage.addAttribute(.foregroundColor, value: Colors.headerMarker, range: hashR)
-            if textR.location != NSNotFound, textR.length > 0 {
-                let level = nsStr.substring(with: hashR).count
-                storage.addAttribute(.foregroundColor, value: Colors.header(level: level), range: textR)
-                storage.addAttribute(.font,            value: self.boldFont,               range: textR)
+        highlightInlineCode(in: storage, text: text, nsText: nsText, range: fullRange, excluded: &excluded)
+        highlightLinks(in: storage, text: text, range: fullRange, excluded: excluded)
+        highlightTextEmphasis(in: storage, text: text, range: fullRange, excluded: excluded)
+        highlightStrikethrough(in: storage, text: text, range: fullRange, excluded: excluded)
+    }
+
+    private func resetBaseStyle(in storage: NSTextStorage, range: NSRange) {
+        storage.addAttribute(.font, value: tokens.bodyFont, range: range)
+        storage.addAttribute(.foregroundColor, value: tokens.textColor, range: range)
+        storage.addAttribute(.paragraphStyle, value: tokens.paragraphStyle, range: range)
+        storage.removeAttribute(.backgroundColor, range: range)
+        storage.removeAttribute(.strikethroughStyle, range: range)
+        storage.removeAttribute(.underlineStyle, range: range)
+    }
+
+    private func highlightFencedCode(in storage: NSTextStorage,
+                                     text: String,
+                                     nsText: NSString,
+                                     range: NSRange,
+                                     excluded: inout IndexSet) {
+        Patterns.fencedCode.enumerateMatches(in: text, range: range) { match, _, _ in
+            guard let match = match else { return }
+            let blockRange = match.range(at: 0)
+            guard blockRange.length > 0 else { return }
+
+            storage.addAttribute(.font, value: self.tokens.codeFont, range: blockRange)
+            storage.addAttribute(.foregroundColor, value: self.tokens.stringTextColor, range: blockRange)
+
+            let openMarkerRange = match.range(at: 1)
+            if openMarkerRange.location != NSNotFound {
+                storage.addAttribute(.foregroundColor, value: self.tokens.keywordMarkerColor, range: openMarkerRange)
             }
-        }
 
-        // ── 4. 引用块 > ───────────────────────────────────────────────────────
-        Patterns.blockquote.enumerateMatches(in: str, range: full) { m, _, _ in
-            guard let r = m?.range else { return }
-            storage.addAttribute(.foregroundColor, value: Colors.muted, range: r)
-        }
+            let languageRange = match.range(at: 2)
+            if languageRange.location != NSNotFound, languageRange.length > 0 {
+                let languageText = nsText.substring(with: languageRange)
+                let trimmed = languageText.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !trimmed.isEmpty,
+                   let tokenRange = languageTokenRange(in: nsText, original: languageRange, token: trimmed) {
+                    storage.addAttribute(.foregroundColor, value: self.tokens.codeFenceLanguageColor, range: tokenRange)
+                }
+            }
 
-        // ── 5. 水平分隔线 ─────────────────────────────────────────────────────
-        Patterns.hr.enumerateMatches(in: str, range: full) { m, _, _ in
-            guard let r = m?.range else { return }
-            storage.addAttribute(.foregroundColor, value: Colors.muted, range: r)
-        }
+            if let closeMarkerRange = closingFenceMarkerRange(in: nsText, blockRange: blockRange) {
+                storage.addAttribute(.foregroundColor, value: self.tokens.keywordMarkerColor, range: closeMarkerRange)
+            }
 
-        // ── 6. Inline 规则（跳过代码块内部）─────────────────────────────────
-
-        // 行内代码 `code`
-        Patterns.inlineCode.enumerateMatches(in: str, range: full) { m, _, _ in
-            guard let r = m?.range, r.length > 0,
-                  !excluded.intersects(integersIn: r.location ..< r.location + r.length) else { return }
-            storage.addAttribute(.backgroundColor, value: Colors.inlineCodeBg, range: r)
-            storage.addAttribute(.font,            value: self.codeFont,       range: r)
-            excluded.insert(integersIn: r.location ..< r.location + r.length)
-        }
-
-        // 粗斜体 ***
-        Patterns.boldItalic.enumerateMatches(in: str, range: full) { m, _, _ in
-            guard let r = m?.range, r.length > 0,
-                  !excluded.intersects(integersIn: r.location ..< r.location + r.length) else { return }
-            storage.addAttribute(.font, value: self.boldItalicFont, range: r)
-        }
-
-        // 粗体 **
-        Patterns.bold.enumerateMatches(in: str, range: full) { m, _, _ in
-            guard let r = m?.range, r.length > 0,
-                  !excluded.intersects(integersIn: r.location ..< r.location + r.length) else { return }
-            storage.addAttribute(.font, value: self.boldFont, range: r)
-        }
-
-        // 斜体 *
-        Patterns.italic.enumerateMatches(in: str, range: full) { m, _, _ in
-            guard let r = m?.range, r.length > 0,
-                  !excluded.intersects(integersIn: r.location ..< r.location + r.length) else { return }
-            storage.addAttribute(.font, value: self.italicFont, range: r)
-        }
-
-        // 链接 [text](url)
-        Patterns.link.enumerateMatches(in: str, range: full) { m, _, _ in
-            guard let r = m?.range, r.length > 0,
-                  !excluded.intersects(integersIn: r.location ..< r.location + r.length) else { return }
-            storage.addAttribute(.foregroundColor, value: Colors.link, range: r)
-        }
-
-        // 删除线 ~~text~~
-        Patterns.strikethrough.enumerateMatches(in: str, range: full) { m, _, _ in
-            guard let r = m?.range, r.length > 0,
-                  !excluded.intersects(integersIn: r.location ..< r.location + r.length) else { return }
-            storage.addAttribute(.strikethroughStyle, value: NSUnderlineStyle.single.rawValue, range: r)
-            storage.addAttribute(.foregroundColor,    value: Colors.muted, range: r)
+            excluded.insert(integersIn: blockRange.location ..< blockRange.location + blockRange.length)
         }
     }
 
-    // MARK: - Colors
+    private func highlightHeaders(in storage: NSTextStorage, text: String, nsText: NSString, range: NSRange) {
+        Patterns.header.enumerateMatches(in: text, range: range) { match, _, _ in
+            guard let match = match, match.numberOfRanges >= 3 else { return }
+            let markerRange = match.range(at: 1)
+            let textRange = match.range(at: 2)
 
-    private enum Colors {
-        static let headerMarker = dynamic(
-            light: NSColor(red: 0.60, green: 0.60, blue: 0.60, alpha: 1),
-            dark:  NSColor(red: 0.50, green: 0.50, blue: 0.50, alpha: 1)
-        )
-        static func header(level: Int) -> NSColor {
-            switch level {
-            case 1: return dynamic(
-                light: NSColor(red: 0.00, green: 0.39, blue: 0.48, alpha: 1), // #00627A
-                dark:  NSColor(red: 0.31, green: 0.79, blue: 0.69, alpha: 1)  // #4EC9B0
-            )
-            case 2: return dynamic(
-                light: NSColor(red: 0.00, green: 0.39, blue: 0.48, alpha: 1),
-                dark:  NSColor(red: 0.31, green: 0.79, blue: 0.69, alpha: 1)
-            )
-            case 3: return dynamic(
-                light: NSColor(red: 0.10, green: 0.45, blue: 0.55, alpha: 1),
-                dark:  NSColor(red: 0.40, green: 0.80, blue: 0.72, alpha: 1)
-            )
-            default: return dynamic(
-                light: NSColor(red: 0.10, green: 0.45, blue: 0.55, alpha: 1),
-                dark:  NSColor(red: 0.40, green: 0.80, blue: 0.72, alpha: 1)
-            )
-            }
-        }
-        static let codeBlockBg = dynamic(
-            light: NSColor(red: 0.95, green: 0.98, blue: 0.95, alpha: 1), // 浅绿背景
-            dark:  NSColor(red: 0.17, green: 0.20, blue: 0.17, alpha: 1)
-        )
-        static let inlineCodeBg = dynamic(
-            light: NSColor(red: 0.93, green: 0.95, blue: 0.93, alpha: 1),
-            dark:  NSColor(red: 0.20, green: 0.23, blue: 0.20, alpha: 1)
-        )
-        static let muted = dynamic(
-            light: NSColor(red: 0.55, green: 0.55, blue: 0.55, alpha: 1),
-            dark:  NSColor(red: 0.50, green: 0.50, blue: 0.50, alpha: 1)
-        )
-        static let link = dynamic(
-            light: NSColor(red: 0.02, green: 0.40, blue: 0.84, alpha: 1), // #066AD7
-            dark:  NSColor(red: 0.47, green: 0.62, blue: 0.86, alpha: 1)  // #789EDB
-        )
-
-        private static func dynamic(light: NSColor, dark: NSColor) -> NSColor {
-            NSColor(name: nil) { appearance in
-                let dark_names: [NSAppearance.Name] = [
-                    .darkAqua, .vibrantDark,
-                    .accessibilityHighContrastDarkAqua,
-                    .accessibilityHighContrastVibrantDark
-                ]
-                return dark_names.contains(appearance.name) ? dark : light
+            storage.addAttribute(.foregroundColor, value: self.tokens.keywordMarkerColor, range: markerRange)
+            if textRange.location != NSNotFound, textRange.length > 0 {
+                let level = nsText.substring(with: markerRange).count
+                storage.addAttribute(.foregroundColor, value: self.tokens.headerColor(level: level), range: textRange)
+                storage.addAttribute(.font, value: self.tokens.boldFont, range: textRange)
             }
         }
     }
 
-    // MARK: - Compiled Patterns (static — compiled once)
+    private func highlightBlockquotes(in storage: NSTextStorage, text: String, range: NSRange) {
+        Patterns.blockquote.enumerateMatches(in: text, range: range) { match, _, _ in
+            guard let match = match else { return }
+            let markerRange = match.range(at: 1)
+            let textRange = match.range(at: 2)
+            if markerRange.location != NSNotFound, markerRange.length > 0 {
+                storage.addAttribute(.foregroundColor, value: self.tokens.keywordMarkerColor, range: markerRange)
+            }
+            if textRange.location != NSNotFound, textRange.length > 0 {
+                storage.addAttribute(.foregroundColor, value: self.tokens.stringTextColor, range: textRange)
+            }
+        }
+    }
+
+    private func highlightListMarkers(in storage: NSTextStorage, text: String, range: NSRange) {
+        Patterns.listMarker.enumerateMatches(in: text, range: range) { match, _, _ in
+            guard let markerRange = match?.range(at: 1), markerRange.location != NSNotFound else { return }
+            storage.addAttribute(.foregroundColor, value: self.tokens.keywordMarkerColor, range: markerRange)
+        }
+    }
+
+    private func highlightHorizontalRules(in storage: NSTextStorage, text: String, range: NSRange) {
+        Patterns.hrule.enumerateMatches(in: text, range: range) { match, _, _ in
+            guard let markerRange = match?.range(at: 1), markerRange.location != NSNotFound else { return }
+            storage.addAttribute(.foregroundColor, value: self.tokens.keywordMarkerColor, range: markerRange)
+        }
+    }
+
+    private func highlightInlineCode(in storage: NSTextStorage,
+                                     text: String,
+                                     nsText: NSString,
+                                     range: NSRange,
+                                     excluded: inout IndexSet) {
+        Patterns.inlineCode.enumerateMatches(in: text, range: range) { match, _, _ in
+            guard let match = match else { return }
+            let codeRange = match.range(at: 0)
+            guard codeRange.length > 0, !excluded.intersects(integersIn: codeRange.location ..< codeRange.location + codeRange.length) else {
+                return
+            }
+
+            storage.addAttribute(.font, value: self.tokens.codeFont, range: codeRange)
+            storage.addAttribute(.foregroundColor, value: self.tokens.stringTextColor, range: codeRange)
+
+            let markerLength = leadingBacktickCount(in: nsText, range: codeRange)
+            if markerLength > 0, codeRange.length >= markerLength * 2 {
+                let openMarkerRange = NSRange(location: codeRange.location, length: markerLength)
+                let closeMarkerRange = NSRange(location: codeRange.location + codeRange.length - markerLength, length: markerLength)
+                storage.addAttribute(.foregroundColor, value: self.tokens.keywordMarkerColor, range: openMarkerRange)
+                storage.addAttribute(.foregroundColor, value: self.tokens.keywordMarkerColor, range: closeMarkerRange)
+            }
+
+            excluded.insert(integersIn: codeRange.location ..< codeRange.location + codeRange.length)
+        }
+    }
+
+    private func highlightLinks(in storage: NSTextStorage, text: String, range: NSRange, excluded: IndexSet) {
+        Patterns.autoLink.enumerateMatches(in: text, range: range) { match, _, _ in
+            guard let match = match else { return }
+            let linkRange = match.range(at: 0)
+            guard !excluded.intersects(integersIn: linkRange.location ..< linkRange.location + linkRange.length) else { return }
+            storage.addAttribute(.foregroundColor, value: self.tokens.hyperlinkTextColor, range: linkRange)
+        }
+
+        Patterns.inlineLink.enumerateMatches(in: text, range: range) { match, _, _ in
+            guard let match = match else { return }
+            let linkRange = match.range(at: 0)
+            guard !excluded.intersects(integersIn: linkRange.location ..< linkRange.location + linkRange.length) else { return }
+
+            let linkTextRange = match.range(at: 1)
+            let destinationRange = match.range(at: 2)
+            let titleRange = match.range(at: 3)
+
+            if linkTextRange.location != NSNotFound {
+                storage.addAttribute(.foregroundColor, value: self.tokens.hyperlinkTextColor, range: linkTextRange)
+            }
+            if destinationRange.location != NSNotFound {
+                storage.addAttribute(.foregroundColor, value: self.tokens.linkDestinationColor, range: destinationRange)
+            }
+            if titleRange.location != NSNotFound {
+                storage.addAttribute(.foregroundColor, value: self.tokens.linkTitleColor, range: titleRange)
+            }
+        }
+
+        Patterns.referenceLink.enumerateMatches(in: text, range: range) { match, _, _ in
+            guard let match = match else { return }
+            let linkRange = match.range(at: 0)
+            guard !excluded.intersects(integersIn: linkRange.location ..< linkRange.location + linkRange.length) else { return }
+
+            let textRange = match.range(at: 1)
+            let labelRange = match.range(at: 2)
+            if textRange.location != NSNotFound {
+                storage.addAttribute(.foregroundColor, value: self.tokens.hyperlinkTextColor, range: textRange)
+            }
+            if labelRange.location != NSNotFound {
+                storage.addAttribute(.foregroundColor, value: self.tokens.linkLabelColor, range: labelRange)
+            }
+        }
+
+        Patterns.linkDefinition.enumerateMatches(in: text, range: range) { match, _, _ in
+            guard let match = match else { return }
+            let definitionRange = match.range(at: 0)
+            guard !excluded.intersects(integersIn: definitionRange.location ..< definitionRange.location + definitionRange.length) else { return }
+
+            let labelRange = match.range(at: 1)
+            let separatorRange = match.range(at: 2)
+            let destinationRange = match.range(at: 3)
+            let titleRange = match.range(at: 4)
+
+            if labelRange.location != NSNotFound {
+                storage.addAttribute(.foregroundColor, value: self.tokens.linkLabelColor, range: labelRange)
+            }
+            if separatorRange.location != NSNotFound {
+                storage.addAttribute(.foregroundColor, value: self.tokens.keywordMarkerColor, range: separatorRange)
+            }
+            if destinationRange.location != NSNotFound {
+                storage.addAttribute(.foregroundColor, value: self.tokens.linkDestinationColor, range: destinationRange)
+            }
+            if titleRange.location != NSNotFound {
+                storage.addAttribute(.foregroundColor, value: self.tokens.linkTitleColor, range: titleRange)
+            }
+        }
+    }
+
+    private func highlightTextEmphasis(in storage: NSTextStorage, text: String, range: NSRange, excluded: IndexSet) {
+        Patterns.boldItalic.enumerateMatches(in: text, range: range) { match, _, _ in
+            guard let highlightRange = match?.range, highlightRange.length > 0 else { return }
+            guard !excluded.intersects(integersIn: highlightRange.location ..< highlightRange.location + highlightRange.length) else { return }
+            storage.addAttribute(.font, value: self.tokens.boldItalicFont, range: highlightRange)
+        }
+
+        Patterns.bold.enumerateMatches(in: text, range: range) { match, _, _ in
+            guard let highlightRange = match?.range, highlightRange.length > 0 else { return }
+            guard !excluded.intersects(integersIn: highlightRange.location ..< highlightRange.location + highlightRange.length) else { return }
+            storage.addAttribute(.font, value: self.tokens.boldFont, range: highlightRange)
+        }
+
+        Patterns.italic.enumerateMatches(in: text, range: range) { match, _, _ in
+            guard let highlightRange = match?.range, highlightRange.length > 0 else { return }
+            guard !excluded.intersects(integersIn: highlightRange.location ..< highlightRange.location + highlightRange.length) else { return }
+            storage.addAttribute(.font, value: self.tokens.italicFont, range: highlightRange)
+        }
+    }
+
+    private func highlightStrikethrough(in storage: NSTextStorage, text: String, range: NSRange, excluded: IndexSet) {
+        Patterns.strikethrough.enumerateMatches(in: text, range: range) { match, _, _ in
+            guard let highlightRange = match?.range, highlightRange.length > 0 else { return }
+            guard !excluded.intersects(integersIn: highlightRange.location ..< highlightRange.location + highlightRange.length) else { return }
+            storage.addAttribute(.strikethroughStyle, value: NSUnderlineStyle.single.rawValue, range: highlightRange)
+            storage.addAttribute(.foregroundColor, value: self.tokens.mutedTextColor, range: highlightRange)
+        }
+    }
+
+    private func languageTokenRange(in nsText: NSString, original: NSRange, token: String) -> NSRange? {
+        let source = nsText.substring(with: original) as NSString
+        let tokenRange = source.range(of: token)
+        guard tokenRange.location != NSNotFound else { return nil }
+        return NSRange(location: original.location + tokenRange.location, length: tokenRange.length)
+    }
+
+    private func closingFenceMarkerRange(in nsText: NSString, blockRange: NSRange) -> NSRange? {
+        let blockText = nsText.substring(with: blockRange) as NSString
+        let searchRange = NSRange(location: 0, length: blockText.length)
+        let lastNewline = blockText.range(of: "\n", options: .backwards, range: searchRange)
+        guard lastNewline.location != NSNotFound else { return nil }
+        let closingLineLocation = lastNewline.location + 1
+        guard closingLineLocation < blockText.length else { return nil }
+        let closingLineLength = blockText.length - closingLineLocation
+        let closingLineRange = NSRange(location: closingLineLocation, length: closingLineLength)
+        let closingLine = blockText.substring(with: closingLineRange)
+        let markerRangeInLine = (closingLine as NSString).range(of: #"`{3,}|~{3,}"#, options: .regularExpression)
+        guard markerRangeInLine.location != NSNotFound else { return nil }
+        return NSRange(
+            location: blockRange.location + closingLineLocation + markerRangeInLine.location,
+            length: markerRangeInLine.length
+        )
+    }
+
+    private func leadingBacktickCount(in nsText: NSString, range: NSRange) -> Int {
+        guard range.length > 0 else { return 0 }
+        var count = 0
+        while count < range.length, nsText.character(at: range.location + count) == 96 {
+            count += 1
+        }
+        return count
+    }
 
     private enum Patterns {
-        // 围栏代码块：```lang\n...\n``` 或 ~~~\n...\n~~~
-        static let fencedCode = regex(#"(?m)^(`{3,}|~{3,})[^\n]*\n[\s\S]*?^\1[ \t]*$"#)
-        // 标题：# 到 ######
-        static let header     = regex(#"(?m)^(#{1,6})([ \t].+?)[ \t]*$"#)
-        // 引用块
-        static let blockquote = regex(#"(?m)^>[ \t].*$"#)
-        // 水平分隔线
-        static let hr         = regex(#"(?m)^(---+|\*\*\*+|___+)[ \t]*$"#)
-        // 行内代码
-        static let inlineCode = regex(#"`[^`\n]+`"#)
-        // 粗斜体 ***
+        static let fencedCode = regex(#"(?m)^(`{3,}|~{3,})([^\n]*)\n([\s\S]*?)^\1[ \t]*$"#)
+        static let header = regex(#"(?m)^(#{1,6})([ \t].+?)[ \t]*$"#)
+        static let blockquote = regex(#"(?m)^([ \t]*>+)([ \t]?.*)$"#)
+        static let listMarker = regex(#"(?m)^([ \t]{0,3}(?:[-+*]|\d+[.)]))(?=[ \t]+)"#)
+        static let hrule = regex(#"(?m)^([ \t]*(?:---+|\*\*\*+|___+)[ \t]*)$"#)
+        static let inlineCode = regex(#"(`+)([^`\n]+?)\1"#)
         static let boldItalic = regex(#"\*{3}[^*\n]+\*{3}|_{3}[^_\n]+_{3}"#)
-        // 粗体 **
-        static let bold       = regex(#"\*{2}[^*\n]+\*{2}|_{2}[^_\n]+_{2}"#)
-        // 斜体 *（不匹配 **）
-        static let italic     = regex(#"(?<!\*)\*[^*\n]+\*(?!\*)|(?<!_)_[^_\n]+_(?!_)"#)
-        // 链接
-        static let link       = regex(#"\[[^\[\]]+\]\([^()]+\)"#)
-        // 删除线
+        static let bold = regex(#"\*{2}[^*\n]+\*{2}|_{2}[^_\n]+_{2}"#)
+        static let italic = regex(#"(?<!\*)\*[^*\n]+\*(?!\*)|(?<!_)_[^_\n]+_(?!_)"#)
         static let strikethrough = regex(#"~~[^~\n]+~~"#)
+
+        static let autoLink = regex(#"<(?:https?|ftp)://[^>\n]+>"#)
+        static let inlineLink = regex(#"\[([^\[\]\n]+)\]\(([^)\s\n]+)(?:\s+(\"[^\"]*\"|'[^']*'|\([^)]+\)))?\)"#)
+        static let referenceLink = regex(#"\[([^\[\]\n]+)\]\[([^\[\]\n]*)\]"#)
+        static let linkDefinition = regex(#"(?m)^(\[[^\[\]\n]+\])(:)([ \t]*<?[^>\s\n]+>?)(?:[ \t]+(\"[^\"]*\"|'[^']*'|\([^)]+\)))?[ \t]*$"#)
 
         private static func regex(_ pattern: String) -> NSRegularExpression {
             // swiftlint:disable:next force_try

@@ -79,13 +79,15 @@ struct MarkdownTextEditor: NSViewRepresentable {
 
     private func applyEditorStyle(to textView: NSTextView, coordinator: Coordinator) {
         let font = editorFont()
+        let styleTokens = MarkdownStyleTokens(baseFont: font)
         let fontToken = "\(font.fontName)-\(font.pointSize)"
         let needsRebuild = coordinator.currentFontToken != fontToken || coordinator.highlighter == nil
 
         textView.font = font
         textView.typingAttributes = [
             .font: font,
-            .foregroundColor: NSColor.labelColor
+            .foregroundColor: NSColor.labelColor,
+            .paragraphStyle: styleTokens.paragraphStyle
         ]
 
         if needsRebuild {
