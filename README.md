@@ -1,6 +1,6 @@
 # MarkdownEditor
 
-macOS 原生 Markdown 编辑器，移植自 IntelliJ IDEA Markdown 插件的预览样式与字体体验。
+macOS 原生 Markdown 编辑器。
 
 [![下载最新版本](https://img.shields.io/badge/下载最新版本-Releases-2ea44f?style=for-the-badge&logo=github)](https://github.com/qxbyte/markdown/releases)
 
