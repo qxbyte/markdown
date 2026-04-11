@@ -209,15 +209,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let sheetWindow = NSWindow(contentViewController: controller)
         sheet = sheetWindow
 
-        // completion handler 在 sheet 动画完全结束后才触发，直接 close
-        window.beginSheet(sheetWindow) { [weak window] _ in
-            guard let window else { return }
+        // completion handler 在 sheet 动画完全结束后才触发，统一走窗口关闭流程
+        window.beginSheet(sheetWindow) { [weak self, weak window] _ in
+            guard let self, let window else { return }
             switch pendingAction {
             case .delete:
-                window.close()
+                self.requestWindowClose(window, windowKey: windowKey)
             case .save(let url):
                 document.save(to: url)
-                window.close()
+                self.requestWindowClose(window, windowKey: windowKey)
             case .cancel:
                 break
             }
@@ -242,14 +242,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             switch response {
             case .alertFirstButtonReturn:
                 document.save()
-                self.windowsPendingClose.insert(windowKey)
-                window.performClose(nil)
+                self.requestWindowClose(window, windowKey: windowKey)
             case .alertSecondButtonReturn:
-                self.windowsPendingClose.insert(windowKey)
-                window.performClose(nil)
+                self.requestWindowClose(window, windowKey: windowKey)
             default:
                 break
             }
+        }
+    }
+
+    private func requestWindowClose(_ window: NSWindow, windowKey: ObjectIdentifier) {
+        windowsPendingClose.insert(windowKey)
+        window.performClose(nil)
+
+        // 某些场景下，sheet 回调与关闭时序会导致 performClose 未生效，这里做一次兜底。
+        DispatchQueue.main.async { [weak self, weak window] in
+            guard let self, let window, window.isVisible else { return }
+            self.windowsPendingClose.insert(windowKey)
+            window.close()
         }
     }
 }
