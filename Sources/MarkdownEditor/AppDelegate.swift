@@ -1,4 +1,5 @@
 import AppKit
+import SwiftUI
 
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
@@ -153,28 +154,79 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             return true
         }
 
-        let alert = NSAlert()
-        alert.messageText = "Markdown Editor"
-        alert.informativeText = "Do you want to save changes before closing?"
-        alert.alertStyle = .warning
-        alert.addButton(withTitle: "Save")
-        alert.addButton(withTitle: "Don't Save")
-        alert.addButton(withTitle: "Cancel")
+        if doc.fileURL == nil {
+            showNewDocumentCloseSheet(for: sender, document: doc, windowKey: key)
+        } else {
+            showUnsavedChangesAlert(for: sender, document: doc, windowKey: key)
+        }
 
-        alert.beginSheetModal(for: sender) { [weak self] response in
+        return false
+    }
+
+    private func showNewDocumentCloseSheet(
+        for window: NSWindow,
+        document: MarkdownDocument,
+        windowKey: ObjectIdentifier
+    ) {
+        let defaultLocation = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+            ?? URL(fileURLWithPath: NSHomeDirectory())
+        let defaultFileName = document.displayName + ".md"
+
+        var sheet: NSWindow?
+
+        let view = SaveCloseSheetView(
+            defaultFileName: defaultFileName,
+            defaultLocation: defaultLocation,
+            onDelete: { [weak self, weak window] in
+                guard let self, let window else { return }
+                if let s = sheet { window.endSheet(s) }
+                self.windowsPendingClose.insert(windowKey)
+                window.performClose(nil)
+            },
+            onCancel: { [weak window] in
+                guard let window, let s = sheet else { return }
+                window.endSheet(s)
+            },
+            onSave: { [weak self, weak window] url, isExecutable in
+                guard let self, let window else { return }
+                document.save(to: url, isExecutable: isExecutable)
+                if let s = sheet { window.endSheet(s) }
+                self.windowsPendingClose.insert(windowKey)
+                window.performClose(nil)
+            }
+        )
+
+        let controller = NSHostingController(rootView: view)
+        let sheetWindow = NSWindow(contentViewController: controller)
+        sheet = sheetWindow
+        window.beginSheet(sheetWindow)
+    }
+
+    private func showUnsavedChangesAlert(
+        for window: NSWindow,
+        document: MarkdownDocument,
+        windowKey: ObjectIdentifier
+    ) {
+        let alert = NSAlert()
+        alert.messageText = "保存更改"
+        alert.informativeText = "你要保存对\u{201C}\(document.displayName)\u{201D}的更改吗？"
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "保存")
+        alert.addButton(withTitle: "不保存")
+        alert.addButton(withTitle: "取消")
+
+        alert.beginSheetModal(for: window) { [weak self] response in
             guard let self else { return }
             switch response {
             case .alertFirstButtonReturn:
-                doc.save()
+                document.save()
             case .alertSecondButtonReturn:
                 break
             default:
                 return
             }
-            windowsPendingClose.insert(key)
-            sender.performClose(nil)
+            windowsPendingClose.insert(windowKey)
+            window.performClose(nil)
         }
-
-        return false
     }
 }
