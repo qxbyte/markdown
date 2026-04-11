@@ -7,7 +7,7 @@ BUNDLE_ID="com.local.markdowneditor"
 VERSION="1.0.0"
 BUILD_DIR=".build/release"
 APP_DIR="dist/${APP_NAME}.app/Contents"
-ICON_SRC="${HOME}/Desktop/markdown.png"
+ICON_SRC="${HOME}/Desktop/图标.png"
 
 echo "▶ 编译 Release..."
 swift build -c release
