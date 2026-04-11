@@ -209,17 +209,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let sheetWindow = NSWindow(contentViewController: controller)
         sheet = sheetWindow
 
-        // completion handler 在 sheet 动画完全结束后才触发
-        window.beginSheet(sheetWindow) { [weak self, weak window] _ in
-            guard let self, let window else { return }
+        // completion handler 在 sheet 动画完全结束后才触发，直接 close
+        window.beginSheet(sheetWindow) { [weak window] _ in
+            guard let window else { return }
             switch pendingAction {
             case .delete:
-                self.windowsPendingClose.insert(windowKey)
-                window.performClose(nil)
+                window.close()
             case .save(let url):
                 document.save(to: url)
-                self.windowsPendingClose.insert(windowKey)
-                window.performClose(nil)
+                window.close()
             case .cancel:
                 break
             }
