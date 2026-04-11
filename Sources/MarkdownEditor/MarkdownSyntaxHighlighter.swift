@@ -1,22 +1,13 @@
 import AppKit
 
 /// 对 NSTextView 的 NSTextStorage 进行 Markdown 语法高亮。
-/// 作为 NSTextStorageDelegate 挂载，每次字符变化后自动触发。
-final class MarkdownSyntaxHighlighter: NSObject, NSTextStorageDelegate {
+final class MarkdownSyntaxHighlighter: NSObject {
 
     private let tokens: MarkdownStyleTokens
 
     init(baseFont: NSFont) {
         self.tokens = MarkdownStyleTokens(baseFont: baseFont)
         super.init()
-    }
-
-    func textStorage(_ textStorage: NSTextStorage,
-                     didProcessEditing editedMask: NSTextStorageEditActions,
-                     range editedRange: NSRange,
-                     changeInLength delta: Int) {
-        guard editedMask.contains(.editedCharacters) else { return }
-        highlight(textStorage)
     }
 
     func highlight(_ storage: NSTextStorage) {
@@ -36,6 +27,8 @@ final class MarkdownSyntaxHighlighter: NSObject, NSTextStorageDelegate {
         highlightBlockquotes(in: storage, text: text, range: fullRange)
         highlightListMarkers(in: storage, text: text, range: fullRange)
         highlightHorizontalRules(in: storage, text: text, range: fullRange)
+        highlightFrontMatter(in: storage, text: text, nsText: nsText, range: fullRange)
+        highlightTableSeparators(in: storage, text: text, range: fullRange, excluded: excluded)
 
         highlightInlineCode(in: storage, text: text, nsText: nsText, range: fullRange, excluded: &excluded)
         highlightLinks(in: storage, text: text, range: fullRange, excluded: excluded)
@@ -98,7 +91,7 @@ final class MarkdownSyntaxHighlighter: NSObject, NSTextStorageDelegate {
             if textRange.location != NSNotFound, textRange.length > 0 {
                 let level = nsText.substring(with: markerRange).count
                 storage.addAttribute(.foregroundColor, value: self.tokens.headerColor(level: level), range: textRange)
-                storage.addAttribute(.font, value: self.tokens.boldFont, range: textRange)
+                storage.addAttribute(.font, value: self.tokens.bodyFont, range: textRange)
             }
         }
     }
@@ -158,12 +151,82 @@ final class MarkdownSyntaxHighlighter: NSObject, NSTextStorageDelegate {
         }
     }
 
+    private func highlightFrontMatter(in storage: NSTextStorage, text: String, nsText: NSString, range: NSRange) {
+        let matcher = Patterns.frontMatterYaml.firstMatch(in: text, range: range) ?? Patterns.frontMatterToml.firstMatch(in: text, range: range)
+        guard let match = matcher else { return }
+        let blockRange = match.range(at: 0)
+        if blockRange.location == NSNotFound || blockRange.length == 0 || blockRange.location != 0 {
+            return
+        }
+
+        let openRange = match.range(at: 1)
+        let closeRange = match.range(at: 2)
+        storage.addAttribute(.foregroundColor, value: tokens.frontMatterDelimiterColor, range: openRange)
+        storage.addAttribute(.foregroundColor, value: tokens.frontMatterDelimiterColor, range: closeRange)
+        storage.addAttribute(.font, value: tokens.boldFont, range: openRange)
+        storage.addAttribute(.font, value: tokens.boldFont, range: closeRange)
+
+        let insideStart = openRange.location + openRange.length
+        let insideEnd = closeRange.location
+        guard insideEnd > insideStart else { return }
+        let insideRange = NSRange(location: insideStart, length: insideEnd - insideStart)
+        let insideText = nsText.substring(with: insideRange)
+        Patterns.frontMatterEntry.enumerateMatches(in: insideText, range: NSRange(location: 0, length: (insideText as NSString).length)) { entryMatch, _, _ in
+            guard let entryMatch = entryMatch else { return }
+            let keyRange = entryMatch.range(at: 1)
+            let separatorRange = entryMatch.range(at: 2)
+            let valueRange = entryMatch.range(at: 3)
+
+            if keyRange.location != NSNotFound {
+                let mapped = NSRange(location: insideRange.location + keyRange.location, length: keyRange.length)
+                storage.addAttribute(.foregroundColor, value: self.tokens.linkDestinationColor, range: mapped)
+            }
+            if separatorRange.location != NSNotFound {
+                let mapped = NSRange(location: insideRange.location + separatorRange.location, length: separatorRange.length)
+                storage.addAttribute(.foregroundColor, value: self.tokens.keywordMarkerColor, range: mapped)
+            }
+            if valueRange.location != NSNotFound {
+                let mapped = NSRange(location: insideRange.location + valueRange.location, length: valueRange.length)
+                storage.addAttribute(.foregroundColor, value: self.tokens.stringTextColor, range: mapped)
+            }
+        }
+    }
+
+    private func highlightTableSeparators(in storage: NSTextStorage, text: String, range: NSRange, excluded: IndexSet) {
+        Patterns.tableSeparatorLine.enumerateMatches(in: text, range: range) { match, _, _ in
+            guard let lineRange = match?.range(at: 0), lineRange.location != NSNotFound else { return }
+            guard !excluded.intersects(integersIn: lineRange.location ..< lineRange.location + lineRange.length) else { return }
+            storage.addAttribute(.foregroundColor, value: self.tokens.tableSeparatorColor, range: lineRange)
+        }
+
+        Patterns.tablePipeLine.enumerateMatches(in: text, range: range) { match, _, _ in
+            guard let lineRange = match?.range(at: 0), lineRange.location != NSNotFound else { return }
+            guard !excluded.intersects(integersIn: lineRange.location ..< lineRange.location + lineRange.length) else { return }
+            let lineText = (text as NSString).substring(with: lineRange)
+            Patterns.tablePipe.enumerateMatches(in: lineText, range: NSRange(location: 0, length: (lineText as NSString).length)) { pipeMatch, _, _ in
+                guard let pipeRange = pipeMatch?.range(at: 0) else { return }
+                let mapped = NSRange(location: lineRange.location + pipeRange.location, length: pipeRange.length)
+                storage.addAttribute(.foregroundColor, value: self.tokens.tableSeparatorColor, range: mapped)
+            }
+        }
+    }
+
     private func highlightLinks(in storage: NSTextStorage, text: String, range: NSRange, excluded: IndexSet) {
+        Patterns.bareURL.enumerateMatches(in: text, range: range) { match, _, _ in
+            guard let match = match else { return }
+            let linkRange = match.range(at: 0)
+            guard !excluded.intersects(integersIn: linkRange.location ..< linkRange.location + linkRange.length) else { return }
+            let destination = (text as NSString).substring(with: linkRange)
+            storage.addAttribute(.foregroundColor, value: self.tokens.hyperlinkTextColor, range: linkRange)
+            self.setLinkAttributes(storage: storage, range: linkRange, destinationRaw: destination)
+        }
+
         Patterns.autoLink.enumerateMatches(in: text, range: range) { match, _, _ in
             guard let match = match else { return }
             let linkRange = match.range(at: 0)
             guard !excluded.intersects(integersIn: linkRange.location ..< linkRange.location + linkRange.length) else { return }
             storage.addAttribute(.foregroundColor, value: self.tokens.hyperlinkTextColor, range: linkRange)
+            self.setLinkAttributes(storage: storage, range: linkRange, destinationRaw: (text as NSString).substring(with: linkRange))
         }
 
         Patterns.inlineLink.enumerateMatches(in: text, range: range) { match, _, _ in
@@ -177,9 +240,12 @@ final class MarkdownSyntaxHighlighter: NSObject, NSTextStorageDelegate {
 
             if linkTextRange.location != NSNotFound {
                 storage.addAttribute(.foregroundColor, value: self.tokens.hyperlinkTextColor, range: linkTextRange)
+                self.setLinkUnderline(storage: storage, range: linkTextRange)
             }
             if destinationRange.location != NSNotFound {
                 storage.addAttribute(.foregroundColor, value: self.tokens.linkDestinationColor, range: destinationRange)
+                let destinationText = (text as NSString).substring(with: destinationRange)
+                self.setLinkAttributes(storage: storage, range: linkTextRange, destinationRaw: destinationText)
             }
             if titleRange.location != NSNotFound {
                 storage.addAttribute(.foregroundColor, value: self.tokens.linkTitleColor, range: titleRange)
@@ -195,6 +261,7 @@ final class MarkdownSyntaxHighlighter: NSObject, NSTextStorageDelegate {
             let labelRange = match.range(at: 2)
             if textRange.location != NSNotFound {
                 storage.addAttribute(.foregroundColor, value: self.tokens.hyperlinkTextColor, range: textRange)
+                self.setLinkUnderline(storage: storage, range: textRange)
             }
             if labelRange.location != NSNotFound {
                 storage.addAttribute(.foregroundColor, value: self.tokens.linkLabelColor, range: labelRange)
@@ -289,6 +356,32 @@ final class MarkdownSyntaxHighlighter: NSObject, NSTextStorageDelegate {
         return count
     }
 
+    private func setLinkUnderline(storage: NSTextStorage, range: NSRange) {
+        guard range.location != NSNotFound, range.length > 0 else { return }
+        storage.addAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: range)
+    }
+
+    private func setLinkAttributes(storage: NSTextStorage, range: NSRange, destinationRaw: String) {
+        guard range.location != NSNotFound, range.length > 0 else { return }
+        guard let url = normalizedURL(from: destinationRaw) else { return }
+        storage.addAttribute(.link, value: url, range: range)
+        setLinkUnderline(storage: storage, range: range)
+    }
+
+    private func normalizedURL(from raw: String) -> URL? {
+        var value = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        if value.hasPrefix("<"), value.hasSuffix(">"), value.count > 2 {
+            value = String(value.dropFirst().dropLast())
+        }
+        if let direct = URL(string: value), let scheme = direct.scheme, !scheme.isEmpty {
+            return direct
+        }
+        if let fallback = URL(string: "https://\(value)"), value.contains(".") {
+            return fallback
+        }
+        return nil
+    }
+
     private enum Patterns {
         static let fencedCode = regex(#"(?m)^(`{3,}|~{3,})([^\n]*)\n([\s\S]*?)^\1[ \t]*$"#)
         static let header = regex(#"(?m)^(#{1,6})([ \t].+?)[ \t]*$"#)
@@ -302,9 +395,16 @@ final class MarkdownSyntaxHighlighter: NSObject, NSTextStorageDelegate {
         static let strikethrough = regex(#"~~[^~\n]+~~"#)
 
         static let autoLink = regex(#"<(?:https?|ftp)://[^>\n]+>"#)
+        static let bareURL = regex(#"(?i)\bhttps?://[^\s<>()\[\]{}\"']+[^\s<>().,\[\]{}\"']"#)
         static let inlineLink = regex(#"\[([^\[\]\n]+)\]\(([^)\s\n]+)(?:\s+(\"[^\"]*\"|'[^']*'|\([^)]+\)))?\)"#)
         static let referenceLink = regex(#"\[([^\[\]\n]+)\]\[([^\[\]\n]*)\]"#)
         static let linkDefinition = regex(#"(?m)^(\[[^\[\]\n]+\])(:)([ \t]*<?[^>\s\n]+>?)(?:[ \t]+(\"[^\"]*\"|'[^']*'|\([^)]+\)))?[ \t]*$"#)
+        static let tableSeparatorLine = regex(#"(?m)^[ \t]*\|?(?:[ \t]*:?-{3,}:?[ \t]*\|)+[ \t]*:?-{3,}:?[ \t]*\|?[ \t]*$"#)
+        static let tablePipeLine = regex(#"(?m)^[ \t]*\|.*\|[ \t]*$"#)
+        static let tablePipe = regex(#"\|"#)
+        static let frontMatterYaml = regex(#"\A(---[ \t]*\n)([\s\S]*?\n)(---[ \t]*(?:\n|$))"#)
+        static let frontMatterToml = regex(#"\A(\+\+\+[ \t]*\n)([\s\S]*?\n)(\+\+\+[ \t]*(?:\n|$))"#)
+        static let frontMatterEntry = regex(#"(?m)^[ \t]*([A-Za-z0-9_.-]+)[ \t]*([:=])[ \t]*(.+?)?[ \t]*$"#)
 
         private static func regex(_ pattern: String) -> NSRegularExpression {
             // swiftlint:disable:next force_try

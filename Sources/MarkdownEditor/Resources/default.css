@@ -119,11 +119,12 @@ body {
 
 .markdown-body a {
   color: var(--md-accent);
-  text-decoration: none;
+  text-decoration: underline;
+  text-underline-offset: 2px;
   background-color: transparent;
 }
 
-.markdown-body a:hover { text-decoration: underline; }
+.markdown-body a:hover { opacity: 0.92; }
 
 /* ── Code & Pre — JetBrains Mono ────────────────────────────────────────── */
 

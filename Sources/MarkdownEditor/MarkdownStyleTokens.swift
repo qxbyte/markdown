@@ -17,6 +17,8 @@ struct MarkdownStyleTokens {
     let linkLabelColor: NSColor
     let linkTitleColor: NSColor
     let codeFenceLanguageColor: NSColor
+    let tableSeparatorColor: NSColor
+    let frontMatterDelimiterColor: NSColor
 
     init(baseFont: NSFont) {
         self.bodyFont = baseFont
@@ -60,23 +62,28 @@ struct MarkdownStyleTokens {
             light: NSColor(red: 0.53, green: 0.39, blue: 0.00, alpha: 1),
             dark: NSColor(red: 0.96, green: 0.78, blue: 0.35, alpha: 1)
         )
+        self.tableSeparatorColor = Self.dynamic(
+            light: NSColor(red: 0.43, green: 0.43, blue: 0.43, alpha: 1),
+            dark: NSColor(red: 0.58, green: 0.58, blue: 0.58, alpha: 1)
+        )
+        self.frontMatterDelimiterColor = self.keywordMarkerColor
     }
 
     func headerColor(level: Int) -> NSColor {
         switch level {
         case 1, 2:
             return Self.dynamic(
-                light: NSColor(red: 0.00, green: 0.20, blue: 0.70, alpha: 1),
+                light: NSColor(red: 0.52, green: 0.16, blue: 0.78, alpha: 1),
                 dark: NSColor(red: 0.60, green: 0.46, blue: 0.79, alpha: 1)
             )
         case 3, 4:
             return Self.dynamic(
-                light: NSColor(red: 0.10, green: 0.31, blue: 0.71, alpha: 1),
+                light: NSColor(red: 0.48, green: 0.20, blue: 0.74, alpha: 1),
                 dark: NSColor(red: 0.62, green: 0.50, blue: 0.82, alpha: 1)
             )
         default:
             return Self.dynamic(
-                light: NSColor(red: 0.14, green: 0.35, blue: 0.64, alpha: 1),
+                light: NSColor(red: 0.45, green: 0.24, blue: 0.68, alpha: 1),
                 dark: NSColor(red: 0.64, green: 0.53, blue: 0.84, alpha: 1)
             )
         }

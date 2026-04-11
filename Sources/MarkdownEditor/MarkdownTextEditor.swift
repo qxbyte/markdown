@@ -21,6 +21,10 @@ struct MarkdownTextEditor: NSViewRepresentable {
         textView.isAutomaticTextReplacementEnabled   = false
         textView.isGrammarCheckingEnabled            = false
         textView.isContinuousSpellCheckingEnabled    = false
+        textView.isAutomaticLinkDetectionEnabled     = false
+        textView.linkTextAttributes = [
+            .underlineStyle: NSUnderlineStyle.single.rawValue
+        ]
         textView.textContainerInset                  = NSSize(width: 20, height: 20)
         textView.textColor          = NSColor.labelColor
         textView.backgroundColor    = NSColor.textBackgroundColor
@@ -44,6 +48,7 @@ struct MarkdownTextEditor: NSViewRepresentable {
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
         let textView = scrollView.documentView as! NSTextView
         applyEditorStyle(to: textView, coordinator: context.coordinator)
+        guard !textView.hasMarkedText() else { return }
         guard textView.string != text else { return }
         // 设置 isUpdating 防止 textView.string = text 触发 textDidChange 反写 document
         context.coordinator.isUpdating = true
@@ -68,10 +73,32 @@ struct MarkdownTextEditor: NSViewRepresentable {
 
         func textDidChange(_ notification: Notification) {
             guard !isUpdating, let tv = notification.object as? NSTextView else { return }
+            guard !tv.hasMarkedText() else { return }
             if let storage = tv.textStorage {
                 highlighter?.highlight(storage)
             }
             parent.text = tv.string
+        }
+
+        func textDidEndEditing(_ notification: Notification) {
+            guard !isUpdating, let tv = notification.object as? NSTextView else { return }
+            if let storage = tv.textStorage {
+                highlighter?.highlight(storage)
+            }
+            parent.text = tv.string
+        }
+
+        func textView(_ textView: NSTextView, clickedOnLink link: Any, at charIndex: Int) -> Bool {
+            guard NSApp.currentEvent?.modifierFlags.contains(.command) == true else { return false }
+            if let url = link as? URL {
+                NSWorkspace.shared.open(url)
+                return true
+            }
+            if let value = link as? String, let url = URL(string: value) {
+                NSWorkspace.shared.open(url)
+                return true
+            }
+            return false
         }
     }
 
@@ -93,7 +120,6 @@ struct MarkdownTextEditor: NSViewRepresentable {
         if needsRebuild {
             let highlighter = MarkdownSyntaxHighlighter(baseFont: font)
             coordinator.highlighter = highlighter
-            textView.textStorage?.delegate = highlighter
             coordinator.currentFontToken = fontToken
         }
 
