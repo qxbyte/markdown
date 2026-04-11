@@ -91,7 +91,7 @@ final class MarkdownSyntaxHighlighter: NSObject {
             if textRange.location != NSNotFound, textRange.length > 0 {
                 let level = nsText.substring(with: markerRange).count
                 storage.addAttribute(.foregroundColor, value: self.tokens.headerColor(level: level), range: textRange)
-                storage.addAttribute(.font, value: self.tokens.boldFont, range: textRange)
+                storage.addAttribute(.font, value: self.tokens.bodyFont, range: textRange)
             }
         }
     }
@@ -212,6 +212,15 @@ final class MarkdownSyntaxHighlighter: NSObject {
     }
 
     private func highlightLinks(in storage: NSTextStorage, text: String, range: NSRange, excluded: IndexSet) {
+        Patterns.bareURL.enumerateMatches(in: text, range: range) { match, _, _ in
+            guard let match = match else { return }
+            let linkRange = match.range(at: 0)
+            guard !excluded.intersects(integersIn: linkRange.location ..< linkRange.location + linkRange.length) else { return }
+            let destination = (text as NSString).substring(with: linkRange)
+            storage.addAttribute(.foregroundColor, value: self.tokens.hyperlinkTextColor, range: linkRange)
+            self.setLinkAttributes(storage: storage, range: linkRange, destinationRaw: destination)
+        }
+
         Patterns.autoLink.enumerateMatches(in: text, range: range) { match, _, _ in
             guard let match = match else { return }
             let linkRange = match.range(at: 0)
@@ -386,6 +395,7 @@ final class MarkdownSyntaxHighlighter: NSObject {
         static let strikethrough = regex(#"~~[^~\n]+~~"#)
 
         static let autoLink = regex(#"<(?:https?|ftp)://[^>\n]+>"#)
+        static let bareURL = regex(#"(?i)\bhttps?://[^\s<>()\[\]{}\"']+[^\s<>().,\[\]{}\"']"#)
         static let inlineLink = regex(#"\[([^\[\]\n]+)\]\(([^)\s\n]+)(?:\s+(\"[^\"]*\"|'[^']*'|\([^)]+\)))?\)"#)
         static let referenceLink = regex(#"\[([^\[\]\n]+)\]\[([^\[\]\n]*)\]"#)
         static let linkDefinition = regex(#"(?m)^(\[[^\[\]\n]+\])(:)([ \t]*<?[^>\s\n]+>?)(?:[ \t]+(\"[^\"]*\"|'[^']*'|\([^)]+\)))?[ \t]*$"#)

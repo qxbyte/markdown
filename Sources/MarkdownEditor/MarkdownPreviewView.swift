@@ -4,6 +4,7 @@ import WebKit
 /// WKWebView wrapper — renders HTML produced by MarkdownProcessor.
 struct MarkdownPreviewView: NSViewRepresentable {
     let markdownText: String
+    func makeCoordinator() -> Coordinator { Coordinator() }
 
     // CSS is loaded once and cached.
     // Bundle.main  → packaged .app (Contents/Resources/default.css)
@@ -24,6 +25,7 @@ struct MarkdownPreviewView: NSViewRepresentable {
         config.defaultWebpagePreferences = prefs
 
         let webView = WKWebView(frame: .zero, configuration: config)
+        webView.navigationDelegate = context.coordinator
         webView.setValue(false, forKey: "drawsBackground") // transparent → follows system bg via CSS
         return webView
     }
@@ -33,5 +35,20 @@ struct MarkdownPreviewView: NSViewRepresentable {
         // Use a bundle base URL so relative resource paths resolve (future: local images)
         let baseURL = Bundle.module.resourceURL
         webView.loadHTMLString(html, baseURL: baseURL)
+    }
+
+    final class Coordinator: NSObject, WKNavigationDelegate {
+        func webView(_ webView: WKWebView,
+                     decidePolicyFor navigationAction: WKNavigationAction,
+                     decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+            guard navigationAction.navigationType == .linkActivated,
+                  let url = navigationAction.request.url else {
+                decisionHandler(.allow)
+                return
+            }
+
+            NSWorkspace.shared.open(url)
+            decisionHandler(.cancel)
+        }
     }
 }
