@@ -10,8 +10,7 @@ struct MarkdownTextEditor: NSViewRepresentable {
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
     func makeNSView(context: Context) -> NSScrollView {
-        let scrollView = NSTextView.scrollableTextView()
-        let textView   = scrollView.documentView as! NSTextView
+        let textView = ImageDropTextView(frame: .zero)
 
         textView.delegate                            = context.coordinator
         textView.isRichText                          = false
@@ -26,15 +25,28 @@ struct MarkdownTextEditor: NSViewRepresentable {
             .underlineStyle: NSUnderlineStyle.single.rawValue
         ]
         textView.textContainerInset                  = NSSize(width: 20, height: 20)
-        textView.textColor          = NSColor.labelColor
-        textView.backgroundColor    = NSColor.textBackgroundColor
+        textView.textColor           = NSColor.labelColor
+        textView.backgroundColor     = NSColor.textBackgroundColor
         textView.insertionPointColor = NSColor.controlAccentColor
 
         // Line wrapping
+        textView.isVerticallyResizable                = true
         textView.isHorizontallyResizable              = false
+        textView.autoresizingMask                     = [.width]
         textView.textContainer?.widthTracksTextView   = true
         textView.textContainer?.containerSize         = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
 
+        // Wire up image drop / paste callbacks
+        textView.onImagesDrop = { [weak coordinator = context.coordinator] urls in
+            coordinator?.insertImageMarkdown(urls: urls)
+        }
+        textView.onImagePaste = { [weak coordinator = context.coordinator] in
+            guard let c = coordinator, let tv = c.textView else { return false }
+            return c.handleImagePaste(in: tv)
+        }
+
+        let scrollView = NSScrollView()
+        scrollView.documentView          = textView
         scrollView.hasVerticalScroller   = true
         scrollView.hasHorizontalScroller = false
         scrollView.autohidesScrollers    = true
@@ -356,6 +368,75 @@ struct MarkdownTextEditor: NSViewRepresentable {
             }
             return "https://\(value)"
         }
+
+        // MARK: - Image Insert
+
+        func insertImageMarkdown(urls: [URL]) {
+            guard let tv = textView else { return }
+            let markdown = urls.map { "![\($0.lastPathComponent)](\($0.path))" }.joined(separator: "\n")
+            insertMarkdownText(markdown, in: tv)
+        }
+
+        func insertImageMarkdown(name: String, path: String) {
+            guard let tv = textView else { return }
+            insertMarkdownText("![\(name)](\(path))", in: tv)
+        }
+
+        private func insertMarkdownText(_ string: String, in tv: NSTextView) {
+            let range = tv.selectedRange()
+            let insertRange = NSRange(location: range.location, length: 0)
+            isUpdating = true
+            tv.textStorage?.replaceCharacters(in: insertRange, with: string)
+            tv.setSelectedRange(NSRange(location: insertRange.location + (string as NSString).length, length: 0))
+            if let storage = tv.textStorage { highlighter?.highlight(storage) }
+            parent.text = tv.string
+            isUpdating = false
+        }
+
+        func handleImagePaste(in tv: NSTextView) -> Bool {
+            let pb = NSPasteboard.general
+            guard let pngData = pasteboardImageAsPNG(pb) else { return false }
+            let tmpDir = imageTmpDirectory()
+            do {
+                try FileManager.default.createDirectory(at: tmpDir, withIntermediateDirectories: true)
+                let name = UUID().uuidString + ".png"
+                let fileURL = tmpDir.appendingPathComponent(name)
+                try pngData.write(to: fileURL)
+                insertImageMarkdown(name: name, path: fileURL.path)
+            } catch {
+                let alert = NSAlert()
+                alert.alertStyle = .warning
+                alert.messageText = "图片保存失败"
+                alert.informativeText = error.localizedDescription
+                alert.addButton(withTitle: "确定")
+                alert.runModal()
+            }
+            return true
+        }
+
+        private func pasteboardImageAsPNG(_ pb: NSPasteboard) -> Data? {
+            // 1. 直接取 PNG 原始数据（部分截图/应用会直接放 public.png）
+            if let data = pb.data(forType: NSPasteboard.PasteboardType("public.png")) {
+                return data
+            }
+            // 2. 取 TIFF 原始数据并转 PNG（macOS 截图默认类型）
+            if let data = pb.data(forType: .tiff),
+               let rep = NSBitmapImageRep(data: data) {
+                return rep.representation(using: .png, properties: [:])
+            }
+            // 3. 兜底：通过 CGImage 路径转 PNG
+            if let image = NSImage(pasteboard: pb),
+               let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
+                let rep = NSBitmapImageRep(cgImage: cgImage)
+                return rep.representation(using: .png, properties: [:])
+            }
+            return nil
+        }
+
+        private func imageTmpDirectory() -> URL {
+            let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+            return appSupport.appendingPathComponent("MarkdownEditor/.tmp", isDirectory: true)
+        }
     }
 
     private enum SelectionAction {
@@ -475,5 +556,54 @@ struct MarkdownTextEditor: NSViewRepresentable {
             ?? NSFont(name: "JetBrains Mono", size: size)
             ?? NSFont(name: "JetBrainsMono-Regular", size: size)
             ?? NSFont.monospacedSystemFont(ofSize: size, weight: .regular)
+    }
+}
+
+// MARK: - ImageDropTextView
+
+private final class ImageDropTextView: NSTextView {
+    var onImagesDrop: (([URL]) -> Void)?
+    var onImagePaste: (() -> Bool)?
+
+    override init(frame: NSRect, textContainer: NSTextContainer?) {
+        super.init(frame: frame, textContainer: textContainer)
+    }
+
+    override init(frame: NSRect) {
+        super.init(frame: frame)
+        registerForDraggedTypes([.fileURL])
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) { fatalError() }
+
+    override func paste(_ sender: Any?) {
+        if onImagePaste?() == true { return }
+        super.paste(sender)
+    }
+
+    override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
+        imageFileURLs(from: sender.draggingPasteboard).isEmpty ? super.draggingEntered(sender) : .copy
+    }
+
+    override func draggingUpdated(_ sender: NSDraggingInfo) -> NSDragOperation {
+        imageFileURLs(from: sender.draggingPasteboard).isEmpty ? super.draggingUpdated(sender) : .copy
+    }
+
+    override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
+        let urls = imageFileURLs(from: sender.draggingPasteboard)
+        guard !urls.isEmpty else { return super.performDragOperation(sender) }
+        let viewPt = convert(sender.draggingLocation, from: nil)
+        setSelectedRange(NSRange(location: characterIndexForInsertion(at: viewPt), length: 0))
+        onImagesDrop?(urls)
+        return true
+    }
+
+    private func imageFileURLs(from pasteboard: NSPasteboard) -> [URL] {
+        let options: [NSPasteboard.ReadingOptionKey: Any] = [
+            .urlReadingFileURLsOnly: true,
+            .urlReadingContentsConformToTypes: ["public.image"]
+        ]
+        return (pasteboard.readObjects(forClasses: [NSURL.self], options: options) as? [URL]) ?? []
     }
 }
