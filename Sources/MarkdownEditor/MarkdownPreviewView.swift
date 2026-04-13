@@ -32,9 +32,12 @@ struct MarkdownPreviewView: NSViewRepresentable {
 
     func updateNSView(_ webView: WKWebView, context: Context) {
         let html = MarkdownProcessor.buildPage(markdown: markdownText, css: Self.css)
-        // Use a bundle base URL so relative resource paths resolve (future: local images)
-        let baseURL = Bundle.module.resourceURL
-        webView.loadHTMLString(html, baseURL: baseURL)
+        // Write to a temp file and use loadFileURL so WKWebView can load
+        // local images at arbitrary absolute paths (drag: original path, paste: .tmp dir)
+        let tmpURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("markdown_preview.html")
+        try? html.write(to: tmpURL, atomically: true, encoding: .utf8)
+        webView.loadFileURL(tmpURL, allowingReadAccessTo: URL(fileURLWithPath: "/"))
     }
 
     final class Coordinator: NSObject, WKNavigationDelegate {
