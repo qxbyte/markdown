@@ -90,10 +90,16 @@ codesign --force --sign - "${APP_PATH}"
 
 DMG_PATH="${DIST_DIR}/${APP_NAME}-${VERSION}.dmg"
 PKG_PATH="${DIST_DIR}/${APP_NAME}-${VERSION}.pkg"
+DMG_STAGING_DIR="${DIST_DIR}/dmg-staging"
 
 echo "▶ Building DMG..."
 rm -f "${DMG_PATH}"
-hdiutil create -volname "${APP_NAME}" -srcfolder "${APP_PATH}" -ov -format UDZO "${DMG_PATH}"
+rm -rf "${DMG_STAGING_DIR}"
+mkdir -p "${DMG_STAGING_DIR}"
+cp -R "${APP_PATH}" "${DMG_STAGING_DIR}/"
+ln -s /Applications "${DMG_STAGING_DIR}/Applications"
+hdiutil create -volname "${APP_NAME}" -srcfolder "${DMG_STAGING_DIR}" -ov -format UDZO "${DMG_PATH}"
+rm -rf "${DMG_STAGING_DIR}"
 
 echo "▶ Building PKG..."
 rm -f "${PKG_PATH}"
