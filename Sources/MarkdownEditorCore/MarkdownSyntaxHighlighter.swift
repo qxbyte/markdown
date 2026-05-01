@@ -1,18 +1,21 @@
 import AppKit
 
 /// 对 NSTextView 的 NSTextStorage 进行 Markdown 语法高亮。
-final class MarkdownSyntaxHighlighter: NSObject {
+public final class MarkdownSyntaxHighlighter: NSObject {
 
     private let tokens: MarkdownStyleTokens
 
-    init(baseFont: NSFont) {
+    public init(baseFont: NSFont) {
         self.tokens = MarkdownStyleTokens(baseFont: baseFont)
         super.init()
     }
 
-    func highlight(_ storage: NSTextStorage) {
+    public func highlight(_ storage: NSTextStorage) {
         let text = storage.string
         guard !text.isEmpty else { return }
+
+        storage.beginEditing()
+        defer { storage.endEditing() }
 
         let nsText = text as NSString
         let fullRange = NSRange(location: 0, length: nsText.length)
