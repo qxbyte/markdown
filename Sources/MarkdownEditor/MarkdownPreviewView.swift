@@ -7,7 +7,6 @@ struct MarkdownPreviewView: NSViewRepresentable {
     let baseURL: URL?
     @Binding var scrollRatio: Double
     @Binding var scrollTarget: MarkdownScrollTarget?
-    @Binding var currentHeadingLine: Int?
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
@@ -32,7 +31,6 @@ struct MarkdownPreviewView: NSViewRepresentable {
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = context.coordinator
         webView.setValue(false, forKey: "drawsBackground") // transparent → follows system bg via CSS
-        context.coordinator.webView = webView
         return webView
     }
 
@@ -63,10 +61,8 @@ struct MarkdownPreviewView: NSViewRepresentable {
         let previewFileURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("markdown_preview-\(UUID().uuidString).html")
         var lastRenderToken: String?
-        weak var webView: WKWebView?
         private var lastAppliedScrollTargetID: UUID?
         private weak var observedScrollView: NSScrollView?
-        private var headingDetectWorkItem: DispatchWorkItem?
 
         init(_ parent: MarkdownPreviewView) {
             self.parent = parent
@@ -108,34 +104,6 @@ struct MarkdownPreviewView: NSViewRepresentable {
         @objc private func scrollViewBoundsDidChange(_ notification: Notification) {
             guard let scrollView = observedScrollView else { return }
             updateRatio(currentScrollRatio(in: scrollView))
-            scheduleHeadingDetection()
-        }
-
-        private func scheduleHeadingDetection() {
-            headingDetectWorkItem?.cancel()
-            let item = DispatchWorkItem { [weak self] in
-                guard let self, let wv = self.webView else { return }
-                let script = """
-                (() => {
-                    const anchors = document.querySelectorAll('div.md-source-anchor[id^="md-line-"]');
-                    let line = null;
-                    for (const el of anchors) {
-                        if (el.getBoundingClientRect().top <= 64) {
-                            const m = el.id.match(/md-line-(\\d+)/);
-                            if (m) line = parseInt(m[1], 10);
-                        }
-                    }
-                    return line;
-                })();
-                """
-                wv.evaluateJavaScript(script) { [weak self] result, _ in
-                    DispatchQueue.main.async {
-                        self?.parent.currentHeadingLine = result as? Int
-                    }
-                }
-            }
-            headingDetectWorkItem = item
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.08, execute: item)
         }
 
         private func updateRatio(_ ratio: Double) {
