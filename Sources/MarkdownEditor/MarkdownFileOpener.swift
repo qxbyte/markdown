@@ -4,10 +4,16 @@ import Foundation
 enum MarkdownFileOpener {
     static func open(_ url: URL, baseURL: URL? = nil) {
         let resolved = resolve(url, baseURL: baseURL)
+        // Drop URLs that couldn't be fully resolved (no scheme, no baseURL)
+        guard let scheme = resolved.scheme, !scheme.isEmpty else { return }
 
-        if resolved.isFileURL, isMarkdownFile(resolved) {
-            if let delegate = NSApp.delegate as? AppDelegate {
-                delegate.open(url: resolved)
+        if resolved.isFileURL {
+            if isMarkdownFile(resolved) {
+                if let delegate = NSApp.delegate as? AppDelegate {
+                    delegate.open(url: resolved)
+                } else {
+                    NSWorkspace.shared.open(resolved)
+                }
             } else {
                 NSWorkspace.shared.open(resolved)
             }
@@ -18,11 +24,12 @@ enum MarkdownFileOpener {
     }
 
     static func resolve(_ url: URL, baseURL: URL?) -> URL {
-        guard !url.isFileURL else { return url.standardizedFileURL }
+        if url.isFileURL { return url.standardizedFileURL }
 
-        if let baseURL,
-           url.scheme == nil || url.scheme?.isEmpty == true {
-            return baseURL.appendingPathComponent(url.relativeString).standardizedFileURL
+        if let baseURL, url.scheme == nil || url.scheme?.isEmpty == true {
+            // Use url.path (percent-decoded) so appendingPathComponent handles spaces correctly
+            let component = url.path.isEmpty ? url.relativeString : url.path
+            return baseURL.appendingPathComponent(component).standardizedFileURL
         }
 
         return url
