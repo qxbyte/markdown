@@ -19,6 +19,10 @@ public struct MarkdownStyleTokens {
     let codeFenceLanguageColor: NSColor
     let tableSeparatorColor: NSColor
     let frontMatterDelimiterColor: NSColor
+    let boldTextColor: NSColor
+    let italicTextColor: NSColor
+    let imageMarkerColor: NSColor
+    let taskCheckedColor: NSColor
 
     public init(baseFont: NSFont) {
         self.bodyFont = baseFont
@@ -67,6 +71,22 @@ public struct MarkdownStyleTokens {
             dark: NSColor(red: 0.58, green: 0.58, blue: 0.58, alpha: 1)
         )
         self.frontMatterDelimiterColor = self.keywordMarkerColor
+        self.boldTextColor = Self.dynamic(
+            light: NSColor(red: 0.71, green: 0.43, blue: 0.00, alpha: 1),
+            dark:  NSColor(red: 0.97, green: 0.76, blue: 0.28, alpha: 1)
+        )
+        self.italicTextColor = Self.dynamic(
+            light: NSColor(red: 0.00, green: 0.47, blue: 0.52, alpha: 1),
+            dark:  NSColor(red: 0.38, green: 0.78, blue: 0.88, alpha: 1)
+        )
+        self.imageMarkerColor = Self.dynamic(
+            light: NSColor(red: 0.70, green: 0.12, blue: 0.55, alpha: 1),
+            dark:  NSColor(red: 0.88, green: 0.45, blue: 0.82, alpha: 1)
+        )
+        self.taskCheckedColor = Self.dynamic(
+            light: NSColor(red: 0.08, green: 0.55, blue: 0.18, alpha: 1),
+            dark:  NSColor(red: 0.32, green: 0.78, blue: 0.40, alpha: 1)
+        )
     }
 
     func headerColor(level: Int) -> NSColor {

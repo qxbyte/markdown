@@ -35,6 +35,8 @@ public final class MarkdownSyntaxHighlighter: NSObject {
 
         highlightInlineCode(in: storage, text: text, nsText: nsText, range: fullRange, excluded: &excluded)
         highlightLinks(in: storage, text: text, range: fullRange, excluded: excluded)
+        highlightImageMarkers(in: storage, text: text, range: fullRange, excluded: excluded)
+        highlightTaskCheckboxes(in: storage, text: text, range: fullRange)
         highlightTextEmphasis(in: storage, text: text, range: fullRange, excluded: excluded)
         highlightStrikethrough(in: storage, text: text, range: fullRange, excluded: excluded)
     }
@@ -296,23 +298,49 @@ public final class MarkdownSyntaxHighlighter: NSObject {
         }
     }
 
+    private func highlightImageMarkers(in storage: NSTextStorage, text: String, range: NSRange, excluded: IndexSet) {
+        Patterns.imageLink.enumerateMatches(in: text, range: range) { match, _, _ in
+            guard let match = match else { return }
+            let fullRange = match.range(at: 0)
+            guard fullRange.location != NSNotFound, fullRange.length > 0 else { return }
+            guard !excluded.intersects(integersIn: fullRange.location ..< fullRange.location + fullRange.length) else { return }
+            let exclamationRange = NSRange(location: fullRange.location, length: 1)
+            storage.addAttribute(.foregroundColor, value: self.tokens.imageMarkerColor, range: exclamationRange)
+        }
+    }
+
+    private func highlightTaskCheckboxes(in storage: NSTextStorage, text: String, range: NSRange) {
+        Patterns.taskCheckbox.enumerateMatches(in: text, range: range) { match, _, _ in
+            guard let match = match else { return }
+            let checkboxRange = match.range(at: 1)
+            let innerRange = match.range(at: 2)
+            guard checkboxRange.location != NSNotFound, innerRange.location != NSNotFound else { return }
+            let inner = (text as NSString).substring(with: innerRange)
+            let color = inner.lowercased() == "x" ? self.tokens.taskCheckedColor : self.tokens.mutedTextColor
+            storage.addAttribute(.foregroundColor, value: color, range: checkboxRange)
+        }
+    }
+
     private func highlightTextEmphasis(in storage: NSTextStorage, text: String, range: NSRange, excluded: IndexSet) {
         Patterns.boldItalic.enumerateMatches(in: text, range: range) { match, _, _ in
             guard let highlightRange = match?.range, highlightRange.length > 0 else { return }
             guard !excluded.intersects(integersIn: highlightRange.location ..< highlightRange.location + highlightRange.length) else { return }
             storage.addAttribute(.font, value: self.tokens.boldItalicFont, range: highlightRange)
+            storage.addAttribute(.foregroundColor, value: self.tokens.boldTextColor, range: highlightRange)
         }
 
         Patterns.bold.enumerateMatches(in: text, range: range) { match, _, _ in
             guard let highlightRange = match?.range, highlightRange.length > 0 else { return }
             guard !excluded.intersects(integersIn: highlightRange.location ..< highlightRange.location + highlightRange.length) else { return }
             storage.addAttribute(.font, value: self.tokens.boldFont, range: highlightRange)
+            storage.addAttribute(.foregroundColor, value: self.tokens.boldTextColor, range: highlightRange)
         }
 
         Patterns.italic.enumerateMatches(in: text, range: range) { match, _, _ in
             guard let highlightRange = match?.range, highlightRange.length > 0 else { return }
             guard !excluded.intersects(integersIn: highlightRange.location ..< highlightRange.location + highlightRange.length) else { return }
             storage.addAttribute(.font, value: self.tokens.italicFont, range: highlightRange)
+            storage.addAttribute(.foregroundColor, value: self.tokens.italicTextColor, range: highlightRange)
         }
     }
 
@@ -376,13 +404,17 @@ public final class MarkdownSyntaxHighlighter: NSObject {
         if value.hasPrefix("<"), value.hasSuffix(">"), value.count > 2 {
             value = String(value.dropFirst().dropLast())
         }
+        guard !value.isEmpty else { return nil }
+        // Has explicit scheme (https://, file://, etc.)
         if let direct = URL(string: value), let scheme = direct.scheme, !scheme.isEmpty {
             return direct
         }
-        if let fallback = URL(string: "https://\(value)"), value.contains(".") {
-            return fallback
+        // Absolute filesystem path — convert to file:// URL
+        if value.hasPrefix("/") {
+            return URL(fileURLWithPath: value.removingPercentEncoding ?? value)
         }
-        return nil
+        // Relative path — store as-is; resolved against document baseURL at click time
+        return URL(string: value)
     }
 
     private enum Patterns {
@@ -397,6 +429,8 @@ public final class MarkdownSyntaxHighlighter: NSObject {
         static let italic = regex(#"(?<!\*)\*[^*\n]+\*(?!\*)|(?<!_)_[^_\n]+_(?!_)"#)
         static let strikethrough = regex(#"~~[^~\n]+~~"#)
 
+        static let imageLink = regex(#"!\[(?:[^\[\]\n]*)\]\([^)\n]*\)"#)
+        static let taskCheckbox = regex(#"(?m)^[ \t]*[-*+][ \t]+(\[([ xX])\])"#)
         static let autoLink = regex(#"<(?:https?|ftp)://[^>\n]+>"#)
         static let bareURL = regex(#"(?i)\bhttps?://[^\s<>()\[\]{}\"']+[^\s<>().,\[\]{}\"']"#)
         static let inlineLink = regex(#"\[([^\[\]\n]+)\]\(([^)\s\n]+)(?:\s+(\"[^\"]*\"|'[^']*'|\([^)]+\)))?\)"#)
