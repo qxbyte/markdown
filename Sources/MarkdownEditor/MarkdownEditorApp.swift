@@ -8,6 +8,7 @@ struct MarkdownEditorApp: App {
         WindowGroup {
             EditorSceneView(appDelegate: appDelegate)
         }
+        .defaultSize(width: 650, height: 750)
         .commands {
             FileCommands(appDelegate: appDelegate)
         }

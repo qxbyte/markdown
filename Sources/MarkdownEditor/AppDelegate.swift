@@ -81,6 +81,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
         if initializedWindows.insert(id).inserted {
             window.toolbarStyle = .unifiedCompact
+            window.toolbar?.sizeMode = .small
+            window.toolbar?.displayMode = .iconOnly
 
             // Create a cascading effect for newly created windows.
             if cascadeSeedTopLeft == nil {

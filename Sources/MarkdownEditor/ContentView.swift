@@ -18,6 +18,17 @@ struct ContentView: View {
         MarkdownNavigation.headings(in: document.text)
     }
 
+    private var currentHeading: MarkdownHeading? {
+        guard !headings.isEmpty else { return nil }
+        let totalLines = max(1, document.text.components(separatedBy: .newlines).count - 1)
+        let currentLine = Int((min(1, max(0, scrollRatio)) * Double(totalLines)).rounded(.down))
+        return headings.last { $0.line <= currentLine } ?? headings.first
+    }
+
+    private var outlineTitle: String {
+        currentHeading?.title ?? document.displayName
+    }
+
     var body: some View {
         Group {
             switch viewMode {
@@ -39,17 +50,22 @@ struct ContentView: View {
                     .frame(minWidth: 280, maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .frame(minWidth: 800, minHeight: 560)
-        .navigationTitle(document.displayName)
+        .frame(minWidth: 650, minHeight: 450)
+        .navigationTitle("")
         .background(
             DocumentEditedWindowAccessor { resolvedWindow in
                 if window !== resolvedWindow {
                     window = resolvedWindow
                 }
+                resolvedWindow.toolbarStyle = .unifiedCompact
+                resolvedWindow.toolbar?.sizeMode = .small
+                resolvedWindow.toolbar?.displayMode = .iconOnly
                 resolvedWindow.isDocumentEdited = document.isDirty
             }
         )
         .toolbar {
+            ToolbarItem(placement: .navigation) {
+                titleBarNavigation
             ToolbarItem(placement: .principal) {
                 outlineButton
             }
@@ -80,10 +96,44 @@ struct ContentView: View {
         }
     }
 
+    private var titleBarNavigation: some View {
+        HStack(spacing: 8) {
+            Text(document.displayName)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+                .truncationMode(.middle)
+                .frame(width: 128, alignment: .leading)
+            outlineButton
+        }
+        .frame(width: 310, alignment: .leading)
+    }
+
     private var outlineButton: some View {
         Button {
             isOutlinePresented.toggle()
         } label: {
+            HStack(spacing: 5) {
+                Image(systemName: "list.bullet.rectangle.portrait.fill")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(.indigo.opacity(0.85))
+                Text(outlineTitle)
+                    .font(.system(size: 12, weight: .semibold))
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                    .layoutPriority(1)
+                    .frame(maxWidth: 170, alignment: .leading)
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.system(size: 8, weight: .semibold))
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 3)
+            .frame(height: 16)
+        }
+        .buttonStyle(.plain)
+        .popover(isPresented: $isOutlinePresented, arrowEdge: .top) {
+            HeadingOutlineView(headings: headings, currentHeading: currentHeading) { heading in
+                viewMode = .editor
             HStack(spacing: 7) {
                 Image(systemName: "list.bullet.rectangle.portrait.fill")
                     .font(.system(size: 14, weight: .medium))
@@ -152,6 +202,59 @@ struct ContentView: View {
 
 private struct HeadingOutlineView: View {
     let headings: [MarkdownHeading]
+    let currentHeading: MarkdownHeading?
+    let onSelect: (MarkdownHeading) -> Void
+
+    private var outlineWidth: CGFloat {
+        let longest = headings
+            .map { estimatedRowWidth(for: $0) }
+            .max() ?? 180
+        return min(520, max(260, longest))
+    }
+
+    private func estimatedRowWidth(for heading: MarkdownHeading) -> CGFloat {
+        let titleWidth = heading.title.reduce(CGFloat(0)) { width, character in
+            width + (character.isASCII ? 6.5 : 11)
+        }
+        let indent = CGFloat(max(0, heading.level - 1)) * 14
+        return titleWidth + indent + 82
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 2) {
+                if headings.isEmpty {
+                    Text("暂无标题")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 8)
+                } else {
+                    ForEach(headings) { heading in
+                        let isCurrent = heading.id == currentHeading?.id
+                        Button {
+                            onSelect(heading)
+                        } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .frame(width: 12)
+                                    .foregroundStyle(.white)
+                                    .opacity(isCurrent ? 1 : 0)
+                                Image(systemName: "list.bullet.rectangle.portrait.fill")
+                                    .font(.system(size: 10.5, weight: .medium))
+                                    .foregroundStyle(isCurrent ? .white.opacity(0.85) : .indigo.opacity(0.75))
+                                Text(heading.title)
+                                    .font(.system(size: 11, weight: .regular))
+                                    .foregroundStyle(isCurrent ? .white : .primary)
+                                    .lineLimit(1)
+                                Spacer(minLength: 6)
+                            }
+                            .padding(.leading, 7 + CGFloat(max(0, heading.level - 1)) * 14)
+                            .padding(.trailing, 8)
+                            .frame(height: 24)
+                            .background(isCurrent ? Color.green.opacity(0.86) : Color.clear)
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
     let documentTitle: String
     let onSelect: (MarkdownHeading) -> Void
 
@@ -187,6 +290,10 @@ private struct HeadingOutlineView: View {
                     }
                 }
             }
+            .padding(6)
+        }
+        .background(.regularMaterial)
+        .frame(width: outlineWidth, height: min(380, max(60, CGFloat(max(headings.count, 1)) * 27 + 12)))
             .padding(.vertical, 10)
         }
         .frame(width: 520, height: min(460, max(80, CGFloat(max(headings.count, 1)) * 38 + 20)))

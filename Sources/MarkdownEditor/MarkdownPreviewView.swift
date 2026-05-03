@@ -43,6 +43,8 @@ struct MarkdownPreviewView: NSViewRepresentable {
         }
         context.coordinator.lastRenderToken = renderToken
 
+        let anchoredMarkdown = MarkdownNavigation.markdownWithHeadingAnchors(markdownText)
+        let html = MarkdownProcessor.buildPage(markdown: anchoredMarkdown, css: Self.css)
         let html = MarkdownProcessor.buildPage(markdown: markdownText, css: Self.css)
         let previewHTML = Self.htmlForPreview(html, baseURL: baseURL)
         let tmpURL = context.coordinator.previewFileURL
@@ -76,6 +78,10 @@ struct MarkdownPreviewView: NSViewRepresentable {
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             setupScrollObserverIfNeeded(for: webView)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self, weak webView] in
+                guard let self, let webView else { return }
+                self.applyScrollTargetIfNeeded(in: webView)
+            }
             applyScrollTargetIfNeeded(in: webView)
         }
 
@@ -88,7 +94,7 @@ struct MarkdownPreviewView: NSViewRepresentable {
                 return
             }
 
-            NSWorkspace.shared.open(url)
+            MarkdownFileOpener.open(url, baseURL: parent.baseURL)
             decisionHandler(.cancel)
         }
 
@@ -140,6 +146,29 @@ struct MarkdownPreviewView: NSViewRepresentable {
             case .ratio(let ratio):
                 scroll(toRatio: ratio, in: webView)
             case .line(let line):
+                scroll(toLine: line, in: webView)
+            }
+        }
+
+        private func scroll(toLine line: Int, in webView: WKWebView) {
+            let script = """
+            (() => {
+              const anchor = document.getElementById('md-line-\(line)');
+              if (!anchor) return false;
+              anchor.scrollIntoView({ block: 'start', behavior: 'auto' });
+              return true;
+            })();
+            """
+            webView.evaluateJavaScript(script) { [weak self, weak webView] result, _ in
+                guard let self, let webView else { return }
+                if (result as? Bool) == true {
+                    if let scrollView = self.observedScrollView ?? self.findScrollView(in: webView) {
+                        self.updateRatio(self.currentScrollRatio(in: scrollView))
+                    }
+                } else {
+                    let totalLines = max(1, self.parent.markdownText.components(separatedBy: .newlines).count - 1)
+                    self.scroll(toRatio: Double(line) / Double(totalLines), in: webView)
+                }
                 let totalLines = max(1, parent.markdownText.components(separatedBy: .newlines).count - 1)
                 scroll(toRatio: Double(line) / Double(totalLines), in: webView)
             }

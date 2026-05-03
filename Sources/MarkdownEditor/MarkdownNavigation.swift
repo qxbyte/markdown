@@ -15,6 +15,7 @@ struct MarkdownScrollTarget: Equatable {
 }
 
 struct MarkdownHeading: Identifiable, Equatable {
+    var id: Int { line }
     let id = UUID()
     let level: Int
     let title: String
@@ -58,5 +59,36 @@ enum MarkdownNavigation {
         }
 
         return result
+    }
+
+    static func markdownWithHeadingAnchors(_ markdown: String) -> String {
+        var output: [String] = []
+        var inFence = false
+
+        for (index, rawLine) in markdown.components(separatedBy: .newlines).enumerated() {
+            let trimmed = rawLine.trimmingCharacters(in: .whitespaces)
+
+            if trimmed.hasPrefix("```") || trimmed.hasPrefix("~~~") {
+                inFence.toggle()
+                output.append(rawLine)
+                continue
+            }
+
+            if !inFence, isHeadingLine(trimmed) {
+                output.append(#"<a id="md-line-\#(index)" class="md-source-anchor"></a>"#)
+            }
+
+            output.append(rawLine)
+        }
+
+        return output.joined(separator: "\n")
+    }
+
+    private static func isHeadingLine(_ trimmed: String) -> Bool {
+        guard trimmed.hasPrefix("#") else { return false }
+        let hashes = trimmed.prefix { $0 == "#" }.count
+        guard (1...6).contains(hashes), trimmed.count > hashes else { return false }
+        let markerEnd = trimmed.index(trimmed.startIndex, offsetBy: hashes)
+        return trimmed[markerEnd] == " "
     }
 }

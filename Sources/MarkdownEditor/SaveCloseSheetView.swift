@@ -139,8 +139,10 @@ private struct LocationPickerView: View {
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
         panel.directoryURL = location
-        if panel.runModal() == .OK, let url = panel.url {
-            location = url
+        AppModalPresenter.showOpenPanel(panel) { response in
+            if response == .OK, let url = panel.url {
+                location = url
+            }
         }
     }
 }

@@ -95,6 +95,7 @@ struct MarkdownTextEditor: NSViewRepresentable {
         var currentFontToken = ""
         weak var textView: NSTextView?
         private var lastAppliedScrollTargetID: UUID?
+        private var highlightedLineRange: NSRange?
 
         private var selectionPopover: NSPopover?
         private var selectionPopoverController: SelectionToolbarViewController?
@@ -147,11 +148,11 @@ struct MarkdownTextEditor: NSViewRepresentable {
         func textView(_ textView: NSTextView, clickedOnLink link: Any, at charIndex: Int) -> Bool {
             guard NSApp.currentEvent?.modifierFlags.contains(.command) == true else { return false }
             if let url = link as? URL {
-                NSWorkspace.shared.open(url)
+                MarkdownFileOpener.open(url, baseURL: parent.documentURL?.deletingLastPathComponent())
                 return true
             }
             if let value = link as? String, let url = URL(string: value) {
-                NSWorkspace.shared.open(url)
+                MarkdownFileOpener.open(url, baseURL: parent.documentURL?.deletingLastPathComponent())
                 return true
             }
             return false
@@ -226,6 +227,33 @@ struct MarkdownTextEditor: NSViewRepresentable {
 
         private func scroll(toLine line: Int, in scrollView: NSScrollView) {
             guard let textView else { return }
+            let lineStartRange = characterRangeForLine(line, in: textView.string)
+            highlightLine(containing: lineStartRange.location, in: textView)
+            textView.scrollRangeToVisible(lineStartRange)
+            scrollView.reflectScrolledClipView(scrollView.contentView)
+        }
+
+        private func highlightLine(containing location: Int, in textView: NSTextView) {
+            guard let layoutManager = textView.layoutManager else { return }
+            if let highlightedLineRange {
+                layoutManager.removeTemporaryAttribute(.backgroundColor, forCharacterRange: highlightedLineRange)
+            }
+
+            let nsText = textView.string as NSString
+            let safeLocation = min(max(0, location), nsText.length)
+            var lineRange = nsText.lineRange(for: NSRange(location: safeLocation, length: 0))
+            if lineRange.length == 0 {
+                lineRange.length = min(1, max(0, nsText.length - lineRange.location))
+            }
+
+            highlightedLineRange = lineRange
+            layoutManager.addTemporaryAttribute(
+                .backgroundColor,
+                value: NSColor.controlAccentColor.withAlphaComponent(0.18),
+                forCharacterRange: lineRange
+            )
+        }
+
             let targetRange = characterRangeForLine(line, in: textView.string)
             textView.scrollRangeToVisible(targetRange)
             scrollView.reflectScrolledClipView(scrollView.contentView)
@@ -414,12 +442,16 @@ struct MarkdownTextEditor: NSViewRepresentable {
             alert.addButton(withTitle: "确定")
             alert.addButton(withTitle: "取消")
 
-            guard alert.runModal() == .alertFirstButtonReturn else { return }
-            let destination = input.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !destination.isEmpty else { return }
+            AppModalPresenter.showAlert(alert, preferred: textView) { [weak self, weak textView] response in
+                guard response == .alertFirstButtonReturn else { return }
+                guard let self, let textView else { return }
 
-            let normalized = normalizeURLString(destination)
-            replaceSelection(in: textView, range: selected, with: "[\(selectedText)](\(normalized))", selectInner: selectedText)
+                let destination = input.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !destination.isEmpty else { return }
+
+                let normalized = self.normalizeURLString(destination)
+                self.replaceSelection(in: textView, range: selected, with: "[\(selectedText)](\(normalized))", selectInner: selectedText)
+            }
         }
 
         private func replaceSelection(in textView: NSTextView, range: NSRange, with replacement: String, selectInner: String) {
@@ -520,7 +552,7 @@ struct MarkdownTextEditor: NSViewRepresentable {
                 alert.messageText = "图片保存失败"
                 alert.informativeText = error.localizedDescription
                 alert.addButton(withTitle: "确定")
-                alert.runModal()
+                AppModalPresenter.showAlert(alert, preferred: tv)
             }
             return true
         }
@@ -558,7 +590,28 @@ struct MarkdownTextEditor: NSViewRepresentable {
             alert.messageText = "图片插入失败"
             alert.informativeText = details
             alert.addButton(withTitle: "确定")
-            alert.runModal()
+            AppModalPresenter.showAlert(alert, preferred: textView)
+        }
+
+        private func markdownLinkDestination(for url: URL) -> String {
+            let rawPath: String
+
+            if let documentURL = parent.documentURL {
+                let basePath = documentURL.deletingLastPathComponent().standardizedFileURL.path
+                let filePath = url.standardizedFileURL.path
+                if filePath.hasPrefix(basePath + "/") {
+                    rawPath = String(filePath.dropFirst(basePath.count + 1))
+                } else {
+                    rawPath = url.path
+                }
+            } else {
+                rawPath = url.path
+            }
+
+            return rawPath
+                .replacingOccurrences(of: " ", with: "%20")
+                .replacingOccurrences(of: ")", with: "%29")
+                .replacingOccurrences(of: "(", with: "%28")
         }
 
         private func markdownLinkDestination(for url: URL) -> String {
