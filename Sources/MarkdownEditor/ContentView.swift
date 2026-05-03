@@ -8,7 +8,6 @@ struct ContentView: View {
     @State private var scrollTarget: MarkdownScrollTarget?
     @State private var isOutlinePresented = false
     @State private var viewModeRawValue: String = EditorViewMode.editor.rawValue
-    @State private var previewCurrentLine: Int? = nil
 
     private var viewMode: EditorViewMode {
         get { EditorViewMode(rawValue: viewModeRawValue) ?? .editor }
@@ -21,19 +20,9 @@ struct ContentView: View {
 
     private var currentHeading: MarkdownHeading? {
         guard !headings.isEmpty else { return nil }
-        switch viewMode {
-        case .preview:
-            // Use JS-detected line for accurate heading in rendered HTML
-            let line = previewCurrentLine ?? {
-                let total = max(1, document.text.components(separatedBy: .newlines).count - 1)
-                return Int((min(1, max(0, scrollRatio)) * Double(total)).rounded(.down))
-            }()
-            return headings.last { $0.line <= line } ?? headings.first
-        case .editor:
-            let totalLines = max(1, document.text.components(separatedBy: .newlines).count - 1)
-            let currentLine = Int((min(1, max(0, scrollRatio)) * Double(totalLines)).rounded(.down))
-            return headings.last { $0.line <= currentLine } ?? headings.first
-        }
+        let totalLines = max(1, document.text.components(separatedBy: .newlines).count - 1)
+        let currentLine = Int((min(1, max(0, scrollRatio)) * Double(totalLines)).rounded(.down))
+        return headings.last { $0.line <= currentLine } ?? headings.first
     }
 
     private var outlineTitle: String {
@@ -56,8 +45,7 @@ struct ContentView: View {
                     markdownText: document.text,
                     baseURL: document.fileURL?.deletingLastPathComponent(),
                     scrollRatio: $scrollRatio,
-                    scrollTarget: $scrollTarget,
-                    currentHeadingLine: $previewCurrentLine
+                    scrollTarget: $scrollTarget
                 )
                     .frame(minWidth: 280, maxWidth: .infinity, maxHeight: .infinity)
             }
@@ -153,13 +141,7 @@ struct ContentView: View {
     @ViewBuilder
     private func modeButton(_ mode: EditorViewMode, icon: String) -> some View {
         Button {
-            // preview → editor: use JS-detected heading line for accurate sync
-            if viewMode == .preview, mode == .editor,
-               let line = previewCurrentLine ?? currentHeading?.line {
-                scrollTarget = MarkdownScrollTarget(kind: .line(line))
-            } else {
-                scrollTarget = MarkdownScrollTarget(kind: .ratio(scrollRatio))
-            }
+            scrollTarget = MarkdownScrollTarget(kind: .ratio(scrollRatio))
             viewMode = mode
         } label: {
             Image(systemName: icon)
