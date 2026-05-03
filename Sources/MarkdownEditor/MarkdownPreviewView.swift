@@ -45,6 +45,7 @@ struct MarkdownPreviewView: NSViewRepresentable {
 
         let anchoredMarkdown = MarkdownNavigation.markdownWithHeadingAnchors(markdownText)
         let html = MarkdownProcessor.buildPage(markdown: anchoredMarkdown, css: Self.css)
+        let html = MarkdownProcessor.buildPage(markdown: markdownText, css: Self.css)
         let previewHTML = Self.htmlForPreview(html, baseURL: baseURL)
         let tmpURL = context.coordinator.previewFileURL
 
@@ -81,6 +82,7 @@ struct MarkdownPreviewView: NSViewRepresentable {
                 guard let self, let webView else { return }
                 self.applyScrollTargetIfNeeded(in: webView)
             }
+            applyScrollTargetIfNeeded(in: webView)
         }
 
         func webView(_ webView: WKWebView,
@@ -167,6 +169,8 @@ struct MarkdownPreviewView: NSViewRepresentable {
                     let totalLines = max(1, self.parent.markdownText.components(separatedBy: .newlines).count - 1)
                     self.scroll(toRatio: Double(line) / Double(totalLines), in: webView)
                 }
+                let totalLines = max(1, parent.markdownText.components(separatedBy: .newlines).count - 1)
+                scroll(toRatio: Double(line) / Double(totalLines), in: webView)
             }
         }
 
