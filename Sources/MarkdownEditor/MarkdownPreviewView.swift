@@ -77,11 +77,15 @@ struct MarkdownPreviewView: NSViewRepresentable {
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             setupScrollObserverIfNeeded(for: webView)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self, weak webView] in
-                guard let self, let webView else { return }
-                self.applyScrollTargetIfNeeded(in: webView)
-            }
             applyScrollTargetIfNeeded(in: webView)
+            // Retry ratio-based scroll after layout settles (fonts/images may shift height)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self, weak webView] in
+                guard let self, let wv = webView else { return }
+                guard let target = self.parent.scrollTarget,
+                      target.id == self.lastAppliedScrollTargetID,
+                      case .ratio(let ratio) = target.kind else { return }
+                self.scroll(toRatio: ratio, in: wv)
+            }
         }
 
         func webView(_ webView: WKWebView,
@@ -160,28 +164,23 @@ struct MarkdownPreviewView: NSViewRepresentable {
             """
             webView.evaluateJavaScript(script) { [weak self, weak webView] result, _ in
                 guard let self, let webView else { return }
-                if (result as? Bool) == true {
-                    if let scrollView = self.observedScrollView ?? self.findScrollView(in: webView) {
-                        self.updateRatio(self.currentScrollRatio(in: scrollView))
-                    }
-                } else {
+                if (result as? Bool) != true {
                     let totalLines = max(1, self.parent.markdownText.components(separatedBy: .newlines).count - 1)
                     self.scroll(toRatio: Double(line) / Double(totalLines), in: webView)
                 }
-                let totalLines = max(1, parent.markdownText.components(separatedBy: .newlines).count - 1)
-                scroll(toRatio: Double(line) / Double(totalLines), in: webView)
             }
         }
 
         private func scroll(toRatio ratio: Double, in webView: WKWebView) {
-            guard let scrollView = observedScrollView ?? findScrollView(in: webView) else { return }
-            let clamped = min(1, max(0, ratio))
-            let visibleHeight = scrollView.contentView.bounds.height
-            let contentHeight = scrollView.documentView?.bounds.height ?? visibleHeight
-            let maxY = max(0, contentHeight - visibleHeight)
-            scrollView.contentView.scroll(to: NSPoint(x: 0, y: CGFloat(clamped) * maxY))
-            scrollView.reflectScrolledClipView(scrollView.contentView)
-            updateRatio(currentScrollRatio(in: scrollView))
+            let clamped = min(1.0, max(0.0, ratio))
+            // Use JavaScript so the browser engine resolves the real scroll height
+            let script = """
+            (function() {
+                var maxY = document.documentElement.scrollHeight - window.innerHeight;
+                if (maxY > 0) { window.scrollTo(0, maxY * \(clamped)); }
+            })();
+            """
+            webView.evaluateJavaScript(script, completionHandler: nil)
         }
 
         private func currentScrollRatio(in scrollView: NSScrollView) -> Double {
