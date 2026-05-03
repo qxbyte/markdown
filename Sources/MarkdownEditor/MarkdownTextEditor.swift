@@ -685,23 +685,19 @@ struct MarkdownTextEditor: NSViewRepresentable {
     private func applyEditorStyle(to textView: NSTextView, coordinator: Coordinator) {
         coordinator.bind(textView: textView)
         let font = editorFont()
-        let styleTokens = MarkdownStyleTokens(baseFont: font)
         let fontToken = "\(font.fontName)-\(font.pointSize)"
-        let needsRebuild = coordinator.currentFontToken != fontToken || coordinator.highlighter == nil
+        // Only rebuild when font actually changes — prevents re-highlighting on every scroll event
+        guard coordinator.currentFontToken != fontToken || coordinator.highlighter == nil else { return }
 
+        let styleTokens = MarkdownStyleTokens(baseFont: font)
         textView.font = font
         textView.typingAttributes = [
             .font: font,
             .foregroundColor: NSColor.labelColor,
             .paragraphStyle: styleTokens.paragraphStyle
         ]
-
-        if needsRebuild {
-            let highlighter = MarkdownSyntaxHighlighter(baseFont: font)
-            coordinator.highlighter = highlighter
-            coordinator.currentFontToken = fontToken
-        }
-
+        coordinator.highlighter = MarkdownSyntaxHighlighter(baseFont: font)
+        coordinator.currentFontToken = fontToken
         if let storage = textView.textStorage {
             coordinator.highlighter?.highlight(storage)
         }

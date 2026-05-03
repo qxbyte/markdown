@@ -184,6 +184,16 @@ body {
 .markdown-body blockquote > :first-child { margin-top: 0; }
 .markdown-body blockquote > :last-child  { margin-bottom: 0; }
 
+.markdown-body blockquote strong {
+  color: var(--md-fg);
+  font-weight: 700;
+}
+
+.markdown-body blockquote em {
+  color: var(--md-blockquote-fg);
+  font-style: italic;
+}
+
 /* ── Lists ──────────────────────────────────────────────────────────────── */
 
 .markdown-body ul,
