@@ -131,7 +131,6 @@ struct ContentView: View {
         .buttonStyle(.plain)
         .popover(isPresented: $isOutlinePresented, arrowEdge: .top) {
             HeadingOutlineView(headings: headings, currentHeading: currentHeading) { heading in
-                viewMode = .editor
                 scrollTarget = MarkdownScrollTarget(kind: .line(heading.line))
                 isOutlinePresented = false
             }
