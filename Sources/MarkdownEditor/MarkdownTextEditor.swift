@@ -146,16 +146,13 @@ struct MarkdownTextEditor: NSViewRepresentable {
         }
 
         func textView(_ textView: NSTextView, clickedOnLink link: Any, at charIndex: Int) -> Bool {
-            guard NSApp.currentEvent?.modifierFlags.contains(.command) == true else { return false }
+            guard NSApp.currentEvent?.modifierFlags.contains(.command) == true else { return true }
             if let url = link as? URL {
                 MarkdownFileOpener.open(url, baseURL: parent.documentURL?.deletingLastPathComponent())
-                return true
-            }
-            if let value = link as? String, let url = URL(string: value) {
+            } else if let value = link as? String, let url = URL(string: value) {
                 MarkdownFileOpener.open(url, baseURL: parent.documentURL?.deletingLastPathComponent())
-                return true
             }
-            return false
+            return true
         }
 
         func textView(_ textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
@@ -405,14 +402,10 @@ struct MarkdownTextEditor: NSViewRepresentable {
                 newSelectionRange = NSRange(location: selected.location + prefix.count, length: selected.length)
             }
 
-            isUpdating = true
+            guard textView.shouldChangeText(in: selected, replacementString: replacement) else { return }
             textView.textStorage?.replaceCharacters(in: selected, with: replacement)
+            textView.didChangeText()
             textView.setSelectedRange(newSelectionRange)
-            if let storage = textView.textStorage {
-                highlighter?.highlight(storage)
-            }
-            parent.text = textView.string
-            isUpdating = false
         }
 
         private func createOrToggleLink(in textView: NSTextView) {
@@ -450,17 +443,13 @@ struct MarkdownTextEditor: NSViewRepresentable {
         }
 
         private func replaceSelection(in textView: NSTextView, range: NSRange, with replacement: String, selectInner: String) {
-            isUpdating = true
+            guard textView.shouldChangeText(in: range, replacementString: replacement) else { return }
             textView.textStorage?.replaceCharacters(in: range, with: replacement)
+            textView.didChangeText()
             if let open = replacement.range(of: selectInner) {
                 let prefixLength = replacement.distance(from: replacement.startIndex, to: open.lowerBound)
                 textView.setSelectedRange(NSRange(location: range.location + prefixLength, length: selectInner.count))
             }
-            if let storage = textView.textStorage {
-                highlighter?.highlight(storage)
-            }
-            parent.text = textView.string
-            isUpdating = false
         }
 
         private func isURLText(_ text: String) -> Bool {
@@ -523,12 +512,10 @@ struct MarkdownTextEditor: NSViewRepresentable {
         private func insertMarkdownText(_ string: String, in tv: NSTextView) {
             let range = tv.selectedRange()
             let insertRange = NSRange(location: range.location, length: 0)
-            isUpdating = true
+            guard tv.shouldChangeText(in: insertRange, replacementString: string) else { return }
             tv.textStorage?.replaceCharacters(in: insertRange, with: string)
+            tv.didChangeText()
             tv.setSelectedRange(NSRange(location: insertRange.location + (string as NSString).length, length: 0))
-            if let storage = tv.textStorage { highlighter?.highlight(storage) }
-            parent.text = tv.string
-            isUpdating = false
         }
 
         func handleImagePaste(in tv: NSTextView) -> Bool {

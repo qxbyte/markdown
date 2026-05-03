@@ -5,8 +5,7 @@
 dist/
 
 # SwiftPM / Xcode user data
-.swiftpm/xcode/package.xcworkspace/xcuserdata/
-.swiftpm/xcode/xcuserdata/
+.swiftpm/
 *.xcuserstate
 *.xcuserdata/
 DerivedData/
@@ -32,3 +31,4 @@ CLAUDE.md
 样式回归样例.md
 
 .kiro/
+specs/
