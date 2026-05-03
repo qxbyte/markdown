@@ -74,16 +74,6 @@ body {
   background-color: var(--md-bg);
 }
 
-/* ── Source anchors injected for heading navigation ────────────────────── */
-
-.md-source-anchor {
-  display: block;
-  height: 0;
-  overflow: hidden;
-  margin: 0;
-  padding: 0;
-}
-
 /* ── Headings ───────────────────────────────────────────────────────────── */
 
 .markdown-body h1,

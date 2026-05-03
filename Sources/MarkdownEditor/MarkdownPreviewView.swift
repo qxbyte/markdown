@@ -7,7 +7,6 @@ struct MarkdownPreviewView: NSViewRepresentable {
     let baseURL: URL?
     @Binding var scrollRatio: Double
     @Binding var scrollTarget: MarkdownScrollTarget?
-    @Binding var currentHeadingLine: Int?
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
@@ -32,7 +31,6 @@ struct MarkdownPreviewView: NSViewRepresentable {
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = context.coordinator
         webView.setValue(false, forKey: "drawsBackground") // transparent → follows system bg via CSS
-        context.coordinator.webView = webView
         return webView
     }
 
@@ -63,10 +61,8 @@ struct MarkdownPreviewView: NSViewRepresentable {
         let previewFileURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("markdown_preview-\(UUID().uuidString).html")
         var lastRenderToken: String?
-        weak var webView: WKWebView?
         private var lastAppliedScrollTargetID: UUID?
         private weak var observedScrollView: NSScrollView?
-        private var headingDetectWorkItem: DispatchWorkItem?
 
         init(_ parent: MarkdownPreviewView) {
             self.parent = parent
@@ -81,15 +77,11 @@ struct MarkdownPreviewView: NSViewRepresentable {
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             setupScrollObserverIfNeeded(for: webView)
-            applyScrollTargetIfNeeded(in: webView)
-            // Retry ratio-based scroll after layout settles (fonts/images may shift height)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self, weak webView] in
-                guard let self, let wv = webView else { return }
-                guard let target = self.parent.scrollTarget,
-                      target.id == self.lastAppliedScrollTargetID,
-                      case .ratio(let ratio) = target.kind else { return }
-                self.scroll(toRatio: ratio, in: wv)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self, weak webView] in
+                guard let self, let webView else { return }
+                self.applyScrollTargetIfNeeded(in: webView)
             }
+            applyScrollTargetIfNeeded(in: webView)
         }
 
         func webView(_ webView: WKWebView,
@@ -108,34 +100,6 @@ struct MarkdownPreviewView: NSViewRepresentable {
         @objc private func scrollViewBoundsDidChange(_ notification: Notification) {
             guard let scrollView = observedScrollView else { return }
             updateRatio(currentScrollRatio(in: scrollView))
-            scheduleHeadingDetection()
-        }
-
-        private func scheduleHeadingDetection() {
-            headingDetectWorkItem?.cancel()
-            let item = DispatchWorkItem { [weak self] in
-                guard let self, let wv = self.webView else { return }
-                let script = """
-                (() => {
-                    const anchors = document.querySelectorAll('div.md-source-anchor[id^="md-line-"]');
-                    let line = null;
-                    for (const el of anchors) {
-                        if (el.getBoundingClientRect().top <= 64) {
-                            const m = el.id.match(/md-line-(\\d+)/);
-                            if (m) line = parseInt(m[1], 10);
-                        }
-                    }
-                    return line;
-                })();
-                """
-                wv.evaluateJavaScript(script) { [weak self] result, _ in
-                    DispatchQueue.main.async {
-                        self?.parent.currentHeadingLine = result as? Int
-                    }
-                }
-            }
-            headingDetectWorkItem = item
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.08, execute: item)
         }
 
         private func updateRatio(_ ratio: Double) {
@@ -196,23 +160,28 @@ struct MarkdownPreviewView: NSViewRepresentable {
             """
             webView.evaluateJavaScript(script) { [weak self, weak webView] result, _ in
                 guard let self, let webView else { return }
-                if (result as? Bool) != true {
+                if (result as? Bool) == true {
+                    if let scrollView = self.observedScrollView ?? self.findScrollView(in: webView) {
+                        self.updateRatio(self.currentScrollRatio(in: scrollView))
+                    }
+                } else {
                     let totalLines = max(1, self.parent.markdownText.components(separatedBy: .newlines).count - 1)
                     self.scroll(toRatio: Double(line) / Double(totalLines), in: webView)
                 }
+                let totalLines = max(1, parent.markdownText.components(separatedBy: .newlines).count - 1)
+                scroll(toRatio: Double(line) / Double(totalLines), in: webView)
             }
         }
 
         private func scroll(toRatio ratio: Double, in webView: WKWebView) {
-            let clamped = min(1.0, max(0.0, ratio))
-            // Use JavaScript so the browser engine resolves the real scroll height
-            let script = """
-            (function() {
-                var maxY = document.documentElement.scrollHeight - window.innerHeight;
-                if (maxY > 0) { window.scrollTo(0, maxY * \(clamped)); }
-            })();
-            """
-            webView.evaluateJavaScript(script, completionHandler: nil)
+            guard let scrollView = observedScrollView ?? findScrollView(in: webView) else { return }
+            let clamped = min(1, max(0, ratio))
+            let visibleHeight = scrollView.contentView.bounds.height
+            let contentHeight = scrollView.documentView?.bounds.height ?? visibleHeight
+            let maxY = max(0, contentHeight - visibleHeight)
+            scrollView.contentView.scroll(to: NSPoint(x: 0, y: CGFloat(clamped) * maxY))
+            scrollView.reflectScrolledClipView(scrollView.contentView)
+            updateRatio(currentScrollRatio(in: scrollView))
         }
 
         private func currentScrollRatio(in scrollView: NSScrollView) -> Double {
