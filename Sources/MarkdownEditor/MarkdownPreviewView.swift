@@ -5,7 +5,10 @@ import WebKit
 struct MarkdownPreviewView: NSViewRepresentable {
     let markdownText: String
     let baseURL: URL?
-    func makeCoordinator() -> Coordinator { Coordinator() }
+    @Binding var scrollRatio: Double
+    @Binding var scrollTarget: MarkdownScrollTarget?
+
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
 
     // CSS is loaded once and cached.
     // Bundle.main  → packaged .app (Contents/Resources/default.css)
@@ -32,7 +35,16 @@ struct MarkdownPreviewView: NSViewRepresentable {
     }
 
     func updateNSView(_ webView: WKWebView, context: Context) {
-        let html = MarkdownProcessor.buildPage(markdown: markdownText, css: Self.css)
+        context.coordinator.parent = self
+        let renderToken = "\(markdownText.hashValue)|\(baseURL?.absoluteString ?? "")"
+        guard context.coordinator.lastRenderToken != renderToken else {
+            context.coordinator.applyScrollTargetIfNeeded(in: webView)
+            return
+        }
+        context.coordinator.lastRenderToken = renderToken
+
+        let anchoredMarkdown = MarkdownNavigation.markdownWithHeadingAnchors(markdownText)
+        let html = MarkdownProcessor.buildPage(markdown: anchoredMarkdown, css: Self.css)
         let previewHTML = Self.htmlForPreview(html, baseURL: baseURL)
         let tmpURL = context.coordinator.previewFileURL
 
@@ -45,11 +57,30 @@ struct MarkdownPreviewView: NSViewRepresentable {
     }
 
     final class Coordinator: NSObject, WKNavigationDelegate {
+        var parent: MarkdownPreviewView
         let previewFileURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("markdown_preview-\(UUID().uuidString).html")
+        var lastRenderToken: String?
+        private var lastAppliedScrollTargetID: UUID?
+        private weak var observedScrollView: NSScrollView?
+
+        init(_ parent: MarkdownPreviewView) {
+            self.parent = parent
+        }
 
         deinit {
+            if let scrollView = observedScrollView {
+                NotificationCenter.default.removeObserver(self, name: NSView.boundsDidChangeNotification, object: scrollView.contentView)
+            }
             try? FileManager.default.removeItem(at: previewFileURL)
+        }
+
+        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            setupScrollObserverIfNeeded(for: webView)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self, weak webView] in
+                guard let self, let webView else { return }
+                self.applyScrollTargetIfNeeded(in: webView)
+            }
         }
 
         func webView(_ webView: WKWebView,
@@ -61,8 +92,100 @@ struct MarkdownPreviewView: NSViewRepresentable {
                 return
             }
 
-            NSWorkspace.shared.open(url)
+            MarkdownFileOpener.open(url, baseURL: parent.baseURL)
             decisionHandler(.cancel)
+        }
+
+        @objc private func scrollViewBoundsDidChange(_ notification: Notification) {
+            guard let scrollView = observedScrollView else { return }
+            updateRatio(currentScrollRatio(in: scrollView))
+        }
+
+        private func updateRatio(_ ratio: Double) {
+            let clamped = min(1, max(0, ratio))
+            guard abs(parent.scrollRatio - clamped) > 0.002 else { return }
+            DispatchQueue.main.async { [weak self] in
+                self?.parent.scrollRatio = clamped
+            }
+        }
+
+        private func setupScrollObserverIfNeeded(for webView: WKWebView) {
+            guard observedScrollView == nil else { return }
+            guard let scrollView = findScrollView(in: webView) else { return }
+            observedScrollView = scrollView
+            scrollView.contentView.postsBoundsChangedNotifications = true
+            NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(scrollViewBoundsDidChange(_:)),
+                name: NSView.boundsDidChangeNotification,
+                object: scrollView.contentView
+            )
+            updateRatio(currentScrollRatio(in: scrollView))
+        }
+
+        private func findScrollView(in view: NSView) -> NSScrollView? {
+            if let scrollView = view as? NSScrollView {
+                return scrollView
+            }
+            for subview in view.subviews {
+                if let match = findScrollView(in: subview) {
+                    return match
+                }
+            }
+            return nil
+        }
+
+        func applyScrollTargetIfNeeded(in webView: WKWebView) {
+            guard let target = parent.scrollTarget else { return }
+            guard lastAppliedScrollTargetID != target.id else { return }
+            lastAppliedScrollTargetID = target.id
+
+            switch target.kind {
+            case .ratio(let ratio):
+                scroll(toRatio: ratio, in: webView)
+            case .line(let line):
+                scroll(toLine: line, in: webView)
+            }
+        }
+
+        private func scroll(toLine line: Int, in webView: WKWebView) {
+            let script = """
+            (() => {
+              const anchor = document.getElementById('md-line-\(line)');
+              if (!anchor) return false;
+              anchor.scrollIntoView({ block: 'start', behavior: 'auto' });
+              return true;
+            })();
+            """
+            webView.evaluateJavaScript(script) { [weak self, weak webView] result, _ in
+                guard let self, let webView else { return }
+                if (result as? Bool) == true {
+                    if let scrollView = self.observedScrollView ?? self.findScrollView(in: webView) {
+                        self.updateRatio(self.currentScrollRatio(in: scrollView))
+                    }
+                } else {
+                    let totalLines = max(1, self.parent.markdownText.components(separatedBy: .newlines).count - 1)
+                    self.scroll(toRatio: Double(line) / Double(totalLines), in: webView)
+                }
+            }
+        }
+
+        private func scroll(toRatio ratio: Double, in webView: WKWebView) {
+            guard let scrollView = observedScrollView ?? findScrollView(in: webView) else { return }
+            let clamped = min(1, max(0, ratio))
+            let visibleHeight = scrollView.contentView.bounds.height
+            let contentHeight = scrollView.documentView?.bounds.height ?? visibleHeight
+            let maxY = max(0, contentHeight - visibleHeight)
+            scrollView.contentView.scroll(to: NSPoint(x: 0, y: CGFloat(clamped) * maxY))
+            scrollView.reflectScrolledClipView(scrollView.contentView)
+            updateRatio(currentScrollRatio(in: scrollView))
+        }
+
+        private func currentScrollRatio(in scrollView: NSScrollView) -> Double {
+            let visibleHeight = scrollView.contentView.bounds.height
+            let contentHeight = scrollView.documentView?.bounds.height ?? visibleHeight
+            let maxY = max(1, contentHeight - visibleHeight)
+            return min(1, max(0, Double(scrollView.contentView.bounds.origin.y / maxY)))
         }
     }
 

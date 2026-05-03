@@ -55,9 +55,11 @@ final class MarkdownDocument: ObservableObject {
         let panel = NSSavePanel()
         panel.allowedContentTypes  = [.init(filenameExtension: "md")!]
         panel.nameFieldStringValue = displayName + ".md"
-        guard panel.runModal() == .OK, let url = panel.url else { return }
-        fileURL = url
-        write(to: url)
+        AppModalPresenter.showSavePanel(panel) { [weak self] response in
+            guard response == .OK, let url = panel.url else { return }
+            self?.fileURL = url
+            self?.write(to: url)
+        }
     }
 
     func save(to url: URL) {
@@ -84,7 +86,7 @@ final class MarkdownDocument: ObservableObject {
             alert.messageText = "保存失败"
             alert.informativeText = "无法写入文件：\(url.path)\n\(error.localizedDescription)"
             alert.addButton(withTitle: "确定")
-            alert.runModal()
+            AppModalPresenter.showAlert(alert)
         }
     }
 

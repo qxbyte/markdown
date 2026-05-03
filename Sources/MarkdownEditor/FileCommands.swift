@@ -18,8 +18,10 @@ struct FileCommands: Commands {
                 panel.allowsMultipleSelection = false
                 panel.canChooseDirectories    = false
                 panel.allowedContentTypes     = [.init(filenameExtension: "md")!, .plainText]
-                guard panel.runModal() == .OK, let url = panel.url else { return }
-                appDelegate.open(url: url, preferredDocument: focusedDocument)
+                AppModalPresenter.showOpenPanel(panel) { response in
+                    guard response == .OK, let url = panel.url else { return }
+                    appDelegate.open(url: url, preferredDocument: focusedDocument)
+                }
             }
             .keyboardShortcut("o", modifiers: .command)
         }
