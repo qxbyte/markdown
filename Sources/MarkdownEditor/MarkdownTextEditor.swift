@@ -1,10 +1,13 @@
 import SwiftUI
 import AppKit
 import MarkdownEditorCore
+import UniformTypeIdentifiers
 
 /// NSTextView wrapper — monospaced editor using JetBrains Mono.
 struct MarkdownTextEditor: NSViewRepresentable {
     @Binding var text: String
+    @Binding var scrollRatio: Double
+    @Binding var scrollTarget: MarkdownScrollTarget?
     let documentURL: URL?
     @AppStorage(EditorStyleSettings.fontFamilyKey) private var fontFamily: String = EditorStyleSettings.defaultFontFamily
     @AppStorage(EditorStyleSettings.fontSizeKey) private var fontSize: Double = EditorStyleSettings.defaultFontSize
@@ -12,7 +15,7 @@ struct MarkdownTextEditor: NSViewRepresentable {
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
     func makeNSView(context: Context) -> NSScrollView {
-        let textView = ImageDropTextView(frame: .zero)
+        let textView = FileDropTextView(frame: .zero)
 
         textView.delegate                            = context.coordinator
         textView.isRichText                          = false
@@ -42,6 +45,9 @@ struct MarkdownTextEditor: NSViewRepresentable {
         textView.onImagesDrop = { [weak coordinator = context.coordinator] urls in
             coordinator?.insertImageMarkdown(urls: urls)
         }
+        textView.onFilesDrop = { [weak coordinator = context.coordinator] urls in
+            coordinator?.insertFileLinks(urls: urls)
+        }
         textView.onImagePaste = { [weak coordinator = context.coordinator] in
             guard let c = coordinator, let tv = c.textView else { return false }
             return c.handleImagePaste(in: tv)
@@ -64,7 +70,10 @@ struct MarkdownTextEditor: NSViewRepresentable {
         context.coordinator.parent = self
         applyEditorStyle(to: textView, coordinator: context.coordinator)
         guard !textView.hasMarkedText() else { return }
-        guard textView.string != text else { return }
+        guard textView.string != text else {
+            context.coordinator.applyScrollTargetIfNeeded(scrollView)
+            return
+        }
         // 设置 isUpdating 防止 textView.string = text 触发 textDidChange 反写 document
         context.coordinator.isUpdating = true
         let selected = textView.selectedRanges
@@ -74,6 +83,7 @@ struct MarkdownTextEditor: NSViewRepresentable {
             context.coordinator.highlighter?.highlight(storage)
         }
         context.coordinator.isUpdating = false
+        context.coordinator.applyScrollTargetIfNeeded(scrollView)
     }
 
     // MARK: - Coordinator
@@ -84,6 +94,7 @@ struct MarkdownTextEditor: NSViewRepresentable {
         var highlighter: MarkdownSyntaxHighlighter?
         var currentFontToken = ""
         weak var textView: NSTextView?
+        private var lastAppliedScrollTargetID: UUID?
 
         private var selectionPopover: NSPopover?
         private var selectionPopoverController: SelectionToolbarViewController?
@@ -156,6 +167,7 @@ struct MarkdownTextEditor: NSViewRepresentable {
 
         @objc private func clipViewBoundsDidChange(_ notification: Notification) {
             hideSelectionToolbar()
+            updateScrollRatio()
         }
 
         private func setupSelectionObserversIfNeeded(for textView: NSTextView) {
@@ -168,6 +180,71 @@ struct MarkdownTextEditor: NSViewRepresentable {
                 name: NSView.boundsDidChangeNotification,
                 object: clipView
             )
+        }
+
+        func applyScrollTargetIfNeeded(_ scrollView: NSScrollView) {
+            guard let target = parent.scrollTarget else { return }
+            guard lastAppliedScrollTargetID != target.id else { return }
+            lastAppliedScrollTargetID = target.id
+
+            DispatchQueue.main.async { [weak self, weak scrollView] in
+                guard let self, let scrollView else { return }
+                switch target.kind {
+                case .ratio(let ratio):
+                    self.scroll(toRatio: ratio, in: scrollView)
+                case .line(let line):
+                    self.scroll(toLine: line, in: scrollView)
+                }
+                self.updateScrollRatio()
+            }
+        }
+
+        private func updateScrollRatio() {
+            guard let textView, let scrollView = textView.enclosingScrollView else { return }
+            let ratio = currentScrollRatio(in: scrollView)
+            guard abs(parent.scrollRatio - ratio) > 0.002 else { return }
+            DispatchQueue.main.async { [weak self] in
+                self?.parent.scrollRatio = ratio
+            }
+        }
+
+        private func currentScrollRatio(in scrollView: NSScrollView) -> Double {
+            let visibleHeight = scrollView.contentView.bounds.height
+            let contentHeight = scrollView.documentView?.bounds.height ?? visibleHeight
+            let maxY = max(1, contentHeight - visibleHeight)
+            return min(1, max(0, Double(scrollView.contentView.bounds.origin.y / maxY)))
+        }
+
+        private func scroll(toRatio ratio: Double, in scrollView: NSScrollView) {
+            let visibleHeight = scrollView.contentView.bounds.height
+            let contentHeight = scrollView.documentView?.bounds.height ?? visibleHeight
+            let maxY = max(0, contentHeight - visibleHeight)
+            let y = CGFloat(min(1, max(0, ratio))) * maxY
+            scrollView.contentView.scroll(to: NSPoint(x: 0, y: y))
+            scrollView.reflectScrolledClipView(scrollView.contentView)
+        }
+
+        private func scroll(toLine line: Int, in scrollView: NSScrollView) {
+            guard let textView else { return }
+            let targetRange = characterRangeForLine(line, in: textView.string)
+            textView.scrollRangeToVisible(targetRange)
+            scrollView.reflectScrolledClipView(scrollView.contentView)
+        }
+
+        private func characterRangeForLine(_ line: Int, in text: String) -> NSRange {
+            let nsText = text as NSString
+            let lines = text.components(separatedBy: .newlines)
+            let clampedLine = min(max(0, line), max(0, lines.count - 1))
+            var location = 0
+
+            if clampedLine > 0 {
+                for index in 0..<clampedLine {
+                    location += (lines[index] as NSString).length
+                    location += 1
+                }
+            }
+
+            return NSRange(location: min(location, nsText.length), length: 0)
         }
 
         private func setupKeyMonitorIfNeeded() {
@@ -402,6 +479,15 @@ struct MarkdownTextEditor: NSViewRepresentable {
             }
         }
 
+        func insertFileLinks(urls: [URL]) {
+            guard let tv = textView else { return }
+            let markdown = urls
+                .map { "[\($0.lastPathComponent)](\(markdownLinkDestination(for: $0)))" }
+                .joined(separator: "\n")
+            guard !markdown.isEmpty else { return }
+            insertMarkdownText(markdown, in: tv)
+        }
+
         func insertImageMarkdown(name: String, path: String) {
             guard let tv = textView else { return }
             insertMarkdownText("![\(name)](\(path))", in: tv)
@@ -473,6 +559,27 @@ struct MarkdownTextEditor: NSViewRepresentable {
             alert.informativeText = details
             alert.addButton(withTitle: "确定")
             alert.runModal()
+        }
+
+        private func markdownLinkDestination(for url: URL) -> String {
+            let rawPath: String
+
+            if let documentURL = parent.documentURL {
+                let basePath = documentURL.deletingLastPathComponent().standardizedFileURL.path
+                let filePath = url.standardizedFileURL.path
+                if filePath.hasPrefix(basePath + "/") {
+                    rawPath = String(filePath.dropFirst(basePath.count + 1))
+                } else {
+                    rawPath = url.path
+                }
+            } else {
+                rawPath = url.path
+            }
+
+            return rawPath
+                .replacingOccurrences(of: " ", with: "%20")
+                .replacingOccurrences(of: ")", with: "%29")
+                .replacingOccurrences(of: "(", with: "%28")
         }
     }
 
@@ -596,10 +703,11 @@ struct MarkdownTextEditor: NSViewRepresentable {
     }
 }
 
-// MARK: - ImageDropTextView
+// MARK: - FileDropTextView
 
-private final class ImageDropTextView: NSTextView {
+private final class FileDropTextView: NSTextView {
     var onImagesDrop: (([URL]) -> Void)?
+    var onFilesDrop: (([URL]) -> Void)?
     var onImagePaste: (() -> Bool)?
 
     override init(frame: NSRect, textContainer: NSTextContainer?) {
@@ -620,27 +728,41 @@ private final class ImageDropTextView: NSTextView {
     }
 
     override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
-        imageFileURLs(from: sender.draggingPasteboard).isEmpty ? super.draggingEntered(sender) : .copy
+        fileURLs(from: sender.draggingPasteboard).isEmpty ? super.draggingEntered(sender) : .copy
     }
 
     override func draggingUpdated(_ sender: NSDraggingInfo) -> NSDragOperation {
-        imageFileURLs(from: sender.draggingPasteboard).isEmpty ? super.draggingUpdated(sender) : .copy
+        fileURLs(from: sender.draggingPasteboard).isEmpty ? super.draggingUpdated(sender) : .copy
     }
 
     override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
-        let urls = imageFileURLs(from: sender.draggingPasteboard)
+        let urls = fileURLs(from: sender.draggingPasteboard)
         guard !urls.isEmpty else { return super.performDragOperation(sender) }
         let viewPt = convert(sender.draggingLocation, from: nil)
         setSelectedRange(NSRange(location: characterIndexForInsertion(at: viewPt), length: 0))
-        onImagesDrop?(urls)
+        let imageURLs = urls.filter(\.isImageFileURL)
+        let fileURLs = urls.filter { !$0.isImageFileURL }
+        if !imageURLs.isEmpty {
+            onImagesDrop?(imageURLs)
+        }
+        if !fileURLs.isEmpty {
+            onFilesDrop?(fileURLs)
+        }
         return true
     }
 
-    private func imageFileURLs(from pasteboard: NSPasteboard) -> [URL] {
+    private func fileURLs(from pasteboard: NSPasteboard) -> [URL] {
         let options: [NSPasteboard.ReadingOptionKey: Any] = [
-            .urlReadingFileURLsOnly: true,
-            .urlReadingContentsConformToTypes: ["public.image"]
+            .urlReadingFileURLsOnly: true
         ]
         return (pasteboard.readObjects(forClasses: [NSURL.self], options: options) as? [URL]) ?? []
+    }
+}
+
+private extension URL {
+    var isImageFileURL: Bool {
+        guard isFileURL else { return false }
+        guard let type = UTType(filenameExtension: pathExtension) else { return false }
+        return type.conforms(to: .image)
     }
 }
