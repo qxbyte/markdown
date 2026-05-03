@@ -7,7 +7,7 @@ struct ContentView: View {
     @State private var scrollRatio: Double = 0
     @State private var scrollTarget: MarkdownScrollTarget?
     @State private var isOutlinePresented = false
-    @AppStorage("editorViewMode") private var viewModeRawValue: String = EditorViewMode.editor.rawValue
+    @State private var viewModeRawValue: String = EditorViewMode.editor.rawValue
 
     private var viewMode: EditorViewMode {
         get { EditorViewMode(rawValue: viewModeRawValue) ?? .editor }
