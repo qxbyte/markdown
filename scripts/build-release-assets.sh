@@ -7,6 +7,7 @@ BUILD_DIR=".build/release"
 DIST_DIR="dist"
 APP_PATH="${DIST_DIR}/${APP_NAME}.app"
 CONTENTS_DIR="${APP_PATH}/Contents"
+RESOURCE_BUNDLE_PATH="${BUILD_DIR}/${APP_NAME}_${APP_NAME}.bundle"
 
 VERSION_INPUT="${1:-}"
 if [[ -z "${VERSION_INPUT}" ]]; then
@@ -26,7 +27,7 @@ rm -rf "${APP_PATH}"
 mkdir -p "${CONTENTS_DIR}/MacOS" "${CONTENTS_DIR}/Resources"
 
 cp "${BUILD_DIR}/${APP_NAME}" "${CONTENTS_DIR}/MacOS/${APP_NAME}"
-cp "${BUILD_DIR}/${APP_NAME}_${APP_NAME}.bundle/default.css" "${CONTENTS_DIR}/Resources/default.css"
+cp -R "${RESOURCE_BUNDLE_PATH}/." "${CONTENTS_DIR}/Resources/"
 
 echo "▶ Generating icon (optional)..."
 if [[ -f "${ICON_SRC}" ]]; then

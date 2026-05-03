@@ -23,6 +23,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var pendingURL: URL?
     private var windowsPendingClose: Set<ObjectIdentifier> = []
 
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        updateApplicationIcon()
+        DistributedNotificationCenter.default().addObserver(
+            self,
+            selector: #selector(interfaceThemeDidChange),
+            name: NSNotification.Name("AppleInterfaceThemeChangedNotification"),
+            object: nil
+        )
+    }
+
     func registerDocument(_ doc: MarkdownDocument) {
         if !documents.allObjects.contains(where: { $0 === doc }) {
             documents.add(doc)
@@ -137,7 +147,33 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         NSApp.reply(toOpenOrPrint: .success)
     }
 
+    @objc private func interfaceThemeDidChange() {
+        DispatchQueue.main.async { [weak self] in
+            self?.updateApplicationIcon()
+        }
+    }
+
+    private func updateApplicationIcon() {
+        let iconName = isUsingDarkAppearance ? "AppIconDark" : "AppIconLight"
+        guard
+            let url = Bundle.main.url(forResource: iconName, withExtension: "png")
+                ?? Bundle.module.url(forResource: iconName, withExtension: "png"),
+            let image = NSImage(contentsOf: url)
+        else { return }
+
+        NSApp.applicationIconImage = image
+    }
+
+    private var isUsingDarkAppearance: Bool {
+        NSApp.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+    }
+
     deinit {
+        DistributedNotificationCenter.default().removeObserver(
+            self,
+            name: NSNotification.Name("AppleInterfaceThemeChangedNotification"),
+            object: nil
+        )
         for (_, token) in windowObservationTokens {
             NotificationCenter.default.removeObserver(token)
         }
