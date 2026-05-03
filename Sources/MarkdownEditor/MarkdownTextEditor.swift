@@ -254,11 +254,6 @@ struct MarkdownTextEditor: NSViewRepresentable {
             )
         }
 
-            let targetRange = characterRangeForLine(line, in: textView.string)
-            textView.scrollRangeToVisible(targetRange)
-            scrollView.reflectScrolledClipView(scrollView.contentView)
-        }
-
         private func characterRangeForLine(_ line: Int, in text: String) -> NSRange {
             let nsText = text as NSString
             let lines = text.components(separatedBy: .newlines)
@@ -614,26 +609,6 @@ struct MarkdownTextEditor: NSViewRepresentable {
                 .replacingOccurrences(of: "(", with: "%28")
         }
 
-        private func markdownLinkDestination(for url: URL) -> String {
-            let rawPath: String
-
-            if let documentURL = parent.documentURL {
-                let basePath = documentURL.deletingLastPathComponent().standardizedFileURL.path
-                let filePath = url.standardizedFileURL.path
-                if filePath.hasPrefix(basePath + "/") {
-                    rawPath = String(filePath.dropFirst(basePath.count + 1))
-                } else {
-                    rawPath = url.path
-                }
-            } else {
-                rawPath = url.path
-            }
-
-            return rawPath
-                .replacingOccurrences(of: " ", with: "%20")
-                .replacingOccurrences(of: ")", with: "%29")
-                .replacingOccurrences(of: "(", with: "%28")
-        }
     }
 
     private enum SelectionAction {

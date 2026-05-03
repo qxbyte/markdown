@@ -66,8 +66,6 @@ struct ContentView: View {
         .toolbar {
             ToolbarItem(placement: .navigation) {
                 titleBarNavigation
-            ToolbarItem(placement: .principal) {
-                outlineButton
             }
             ToolbarItem(placement: .primaryAction) {
                 HStack(spacing: 1) {
@@ -134,25 +132,6 @@ struct ContentView: View {
         .popover(isPresented: $isOutlinePresented, arrowEdge: .top) {
             HeadingOutlineView(headings: headings, currentHeading: currentHeading) { heading in
                 viewMode = .editor
-            HStack(spacing: 7) {
-                Image(systemName: "list.bullet.rectangle.portrait.fill")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(.indigo.opacity(0.85))
-                Text(document.displayName)
-                    .font(.system(size: 14, weight: .semibold))
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                    .frame(maxWidth: 420)
-                Image(systemName: "chevron.up.chevron.down")
-                    .font(.system(size: 9, weight: .semibold))
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.horizontal, 3)
-            .frame(height: 20)
-        }
-        .buttonStyle(.plain)
-        .popover(isPresented: $isOutlinePresented, arrowEdge: .top) {
-            HeadingOutlineView(headings: headings, documentTitle: document.displayName) { heading in
                 scrollTarget = MarkdownScrollTarget(kind: .line(heading.line))
                 isOutlinePresented = false
             }
@@ -255,36 +234,6 @@ private struct HeadingOutlineView: View {
                             .frame(height: 24)
                             .background(isCurrent ? Color.green.opacity(0.86) : Color.clear)
                             .clipShape(RoundedRectangle(cornerRadius: 6))
-    let documentTitle: String
-    let onSelect: (MarkdownHeading) -> Void
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 8) {
-                if headings.isEmpty {
-                    Text("暂无标题")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 12)
-                } else {
-                    ForEach(headings) { heading in
-                        Button {
-                            onSelect(heading)
-                        } label: {
-                            HStack(spacing: 10) {
-                                Image(systemName: "list.bullet.rectangle.portrait.fill")
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundStyle(.indigo.opacity(0.8))
-                                Text(heading.title)
-                                    .font(.system(size: heading.level == 1 ? 15 : 14, weight: heading.level <= 2 ? .semibold : .regular))
-                                    .foregroundStyle(.primary)
-                                    .lineLimit(1)
-                                Spacer(minLength: 8)
-                            }
-                            .padding(.leading, CGFloat(max(0, heading.level - 1)) * 24)
-                            .padding(.trailing, 14)
-                            .frame(height: 30)
                         }
                         .buttonStyle(.plain)
                     }
@@ -294,9 +243,6 @@ private struct HeadingOutlineView: View {
         }
         .background(.regularMaterial)
         .frame(width: outlineWidth, height: min(380, max(60, CGFloat(max(headings.count, 1)) * 27 + 12)))
-            .padding(.vertical, 10)
-        }
-        .frame(width: 520, height: min(460, max(80, CGFloat(max(headings.count, 1)) * 38 + 20)))
     }
 }
 
