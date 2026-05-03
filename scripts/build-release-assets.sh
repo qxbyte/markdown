@@ -93,6 +93,7 @@ PKG_PATH="${DIST_DIR}/${APP_NAME}-${VERSION}.pkg"
 DMG_STAGING_DIR="${DIST_DIR}/dmg-staging"
 DMG_TEMP_PATH="${DIST_DIR}/${APP_NAME}-${VERSION}-rw.dmg"
 DMG_BACKGROUND_PATH="${DMG_STAGING_DIR}/.background/background.png"
+STYLE_DMG="${STYLE_DMG:-}"
 DMG_MOUNT_DIR=""
 DMG_DEVICE=""
 
@@ -111,26 +112,28 @@ rm -rf "${DMG_STAGING_DIR}"
 mkdir -p "${DMG_STAGING_DIR}/.background"
 cp -R "${APP_PATH}" "${DMG_STAGING_DIR}/"
 ln -s /Applications "${DMG_STAGING_DIR}/Applications"
-swift "${SCRIPT_DIR}/generate-dmg-background.swift" "${DMG_BACKGROUND_PATH}"
 
-hdiutil create \
-  -volname "${APP_NAME}" \
-  -srcfolder "${DMG_STAGING_DIR}" \
-  -ov \
-  -format UDRW \
-  -fs HFS+ \
-  "${DMG_TEMP_PATH}"
+if [[ "${STYLE_DMG}" == "1" ]]; then
+  swift "${SCRIPT_DIR}/generate-dmg-background.swift" "${DMG_BACKGROUND_PATH}"
 
-ATTACH_OUTPUT="$(hdiutil attach "${DMG_TEMP_PATH}" -readwrite -noverify -noautoopen)"
-DMG_DEVICE="$(printf "%s\n" "${ATTACH_OUTPUT}" | awk '/Apple_HFS/ { print $1; exit }')"
-DMG_MOUNT_DIR="$(printf "%s\n" "${ATTACH_OUTPUT}" | awk '/Apple_HFS/ { print $3; exit }')"
+  hdiutil create \
+    -volname "${APP_NAME}" \
+    -srcfolder "${DMG_STAGING_DIR}" \
+    -ov \
+    -format UDRW \
+    -fs HFS+ \
+    "${DMG_TEMP_PATH}"
 
-if [[ -z "${DMG_DEVICE}" || -z "${DMG_MOUNT_DIR}" ]]; then
-  echo "Failed to mount temporary DMG." >&2
-  exit 1
-fi
+  ATTACH_OUTPUT="$(hdiutil attach "${DMG_TEMP_PATH}" -readwrite -noverify -noautoopen)"
+  DMG_DEVICE="$(printf "%s\n" "${ATTACH_OUTPUT}" | awk '/Apple_HFS/ { print $1; exit }')"
+  DMG_MOUNT_DIR="$(printf "%s\n" "${ATTACH_OUTPUT}" | awk '/Apple_HFS/ { print $3; exit }')"
 
-osascript <<APPLESCRIPT
+  if [[ -z "${DMG_DEVICE}" || -z "${DMG_MOUNT_DIR}" ]]; then
+    echo "Failed to mount temporary DMG." >&2
+    exit 1
+  fi
+
+  osascript <<APPLESCRIPT
 tell application "Finder"
   open POSIX file "${DMG_MOUNT_DIR}"
   delay 1
@@ -154,12 +157,21 @@ tell application "Finder"
 end tell
 APPLESCRIPT
 
-sync
-hdiutil detach "${DMG_DEVICE}" -quiet
-DMG_DEVICE=""
+  sync
+  hdiutil detach "${DMG_DEVICE}" -quiet
+  DMG_DEVICE=""
 
-hdiutil convert "${DMG_TEMP_PATH}" -ov -format UDZO -imagekey zlib-level=9 -o "${DMG_PATH}"
-rm -f "${DMG_TEMP_PATH}"
+  hdiutil convert "${DMG_TEMP_PATH}" -ov -format UDZO -imagekey zlib-level=9 -o "${DMG_PATH}"
+  rm -f "${DMG_TEMP_PATH}"
+else
+  hdiutil create \
+    -volname "${APP_NAME}" \
+    -srcfolder "${DMG_STAGING_DIR}" \
+    -ov \
+    -format UDZO \
+    "${DMG_PATH}"
+fi
+
 rm -rf "${DMG_STAGING_DIR}"
 
 echo "▶ Building PKG..."
