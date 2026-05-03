@@ -74,7 +74,7 @@ enum MarkdownNavigation {
             }
 
             if !inFence, isHeadingLine(trimmed) {
-                output.append(#"<a id="md-line-\#(index)" class="md-source-anchor"></a>"#)
+                output.append("<div id=\"md-line-\(index)\" class=\"md-source-anchor\"></div>")
             }
 
             output.append(rawLine)
