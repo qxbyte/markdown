@@ -45,7 +45,6 @@ struct MarkdownPreviewView: NSViewRepresentable {
 
         let anchoredMarkdown = MarkdownNavigation.markdownWithHeadingAnchors(markdownText)
         let html = MarkdownProcessor.buildPage(markdown: anchoredMarkdown, css: Self.css)
-        let html = MarkdownProcessor.buildPage(markdown: markdownText, css: Self.css)
         let previewHTML = Self.htmlForPreview(html, baseURL: baseURL)
         let tmpURL = context.coordinator.previewFileURL
 

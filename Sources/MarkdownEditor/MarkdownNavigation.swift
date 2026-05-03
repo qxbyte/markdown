@@ -16,7 +16,6 @@ struct MarkdownScrollTarget: Equatable {
 
 struct MarkdownHeading: Identifiable, Equatable {
     var id: Int { line }
-    let id = UUID()
     let level: Int
     let title: String
     let line: Int
