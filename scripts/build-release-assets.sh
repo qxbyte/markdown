@@ -91,14 +91,75 @@ codesign --force --sign - "${APP_PATH}"
 DMG_PATH="${DIST_DIR}/${APP_NAME}-${VERSION}.dmg"
 PKG_PATH="${DIST_DIR}/${APP_NAME}-${VERSION}.pkg"
 DMG_STAGING_DIR="${DIST_DIR}/dmg-staging"
+DMG_TEMP_PATH="${DIST_DIR}/${APP_NAME}-${VERSION}-rw.dmg"
+DMG_BACKGROUND_PATH="${DMG_STAGING_DIR}/.background/background.png"
+DMG_MOUNT_DIR=""
+DMG_DEVICE=""
+
+cleanup_dmg() {
+  if [[ -n "${DMG_DEVICE}" ]]; then
+    hdiutil detach "${DMG_DEVICE}" -quiet > /dev/null 2>&1 || true
+  fi
+  rm -rf "${DMG_STAGING_DIR}"
+  rm -f "${DMG_TEMP_PATH}"
+}
+trap cleanup_dmg EXIT
 
 echo "▶ Building DMG..."
-rm -f "${DMG_PATH}"
+rm -f "${DMG_PATH}" "${DMG_TEMP_PATH}"
 rm -rf "${DMG_STAGING_DIR}"
-mkdir -p "${DMG_STAGING_DIR}"
+mkdir -p "${DMG_STAGING_DIR}/.background"
 cp -R "${APP_PATH}" "${DMG_STAGING_DIR}/"
 ln -s /Applications "${DMG_STAGING_DIR}/Applications"
-hdiutil create -volname "${APP_NAME}" -srcfolder "${DMG_STAGING_DIR}" -ov -format UDZO "${DMG_PATH}"
+swift "${SCRIPT_DIR}/generate-dmg-background.swift" "${DMG_BACKGROUND_PATH}"
+
+hdiutil create \
+  -volname "${APP_NAME}" \
+  -srcfolder "${DMG_STAGING_DIR}" \
+  -ov \
+  -format UDRW \
+  -fs HFS+ \
+  "${DMG_TEMP_PATH}"
+
+ATTACH_OUTPUT="$(hdiutil attach "${DMG_TEMP_PATH}" -readwrite -noverify -noautoopen)"
+DMG_DEVICE="$(printf "%s\n" "${ATTACH_OUTPUT}" | awk '/Apple_HFS/ { print $1; exit }')"
+DMG_MOUNT_DIR="$(printf "%s\n" "${ATTACH_OUTPUT}" | awk '/Apple_HFS/ { print $3; exit }')"
+
+if [[ -z "${DMG_DEVICE}" || -z "${DMG_MOUNT_DIR}" ]]; then
+  echo "Failed to mount temporary DMG." >&2
+  exit 1
+fi
+
+osascript <<APPLESCRIPT
+tell application "Finder"
+  open POSIX file "${DMG_MOUNT_DIR}"
+  delay 1
+  tell disk "${APP_NAME}"
+    open
+    set current view of container window to icon view
+    set toolbar visible of container window to false
+    set statusbar visible of container window to false
+    set the bounds of container window to {120, 120, 760, 540}
+    set viewOptions to the icon view options of container window
+    set arrangement of viewOptions to not arranged
+    set icon size of viewOptions to 128
+    set background picture of viewOptions to file ".background:background.png"
+    set position of item "${APP_NAME}.app" of container window to {170, 220}
+    set position of item "Applications" of container window to {470, 220}
+    close
+    open
+    update without registering applications
+    delay 1
+  end tell
+end tell
+APPLESCRIPT
+
+sync
+hdiutil detach "${DMG_DEVICE}" -quiet
+DMG_DEVICE=""
+
+hdiutil convert "${DMG_TEMP_PATH}" -ov -format UDZO -imagekey zlib-level=9 -o "${DMG_PATH}"
+rm -f "${DMG_TEMP_PATH}"
 rm -rf "${DMG_STAGING_DIR}"
 
 echo "▶ Building PKG..."

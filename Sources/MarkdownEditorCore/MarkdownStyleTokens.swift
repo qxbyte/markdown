@@ -1,12 +1,12 @@
 import AppKit
 
-struct MarkdownStyleTokens {
+public struct MarkdownStyleTokens {
     let bodyFont: NSFont
     let boldFont: NSFont
     let italicFont: NSFont
     let boldItalicFont: NSFont
     let codeFont: NSFont
-    let paragraphStyle: NSParagraphStyle
+    public let paragraphStyle: NSParagraphStyle
 
     let textColor: NSColor
     let mutedTextColor: NSColor
@@ -20,7 +20,7 @@ struct MarkdownStyleTokens {
     let tableSeparatorColor: NSColor
     let frontMatterDelimiterColor: NSColor
 
-    init(baseFont: NSFont) {
+    public init(baseFont: NSFont) {
         self.bodyFont = baseFont
         let size = baseFont.pointSize
         let fontManager = NSFontManager.shared

@@ -1,9 +1,11 @@
 import SwiftUI
 import AppKit
+import MarkdownEditorCore
 
 /// NSTextView wrapper — monospaced editor using JetBrains Mono.
 struct MarkdownTextEditor: NSViewRepresentable {
     @Binding var text: String
+    let documentURL: URL?
     @AppStorage(EditorStyleSettings.fontFamilyKey) private var fontFamily: String = EditorStyleSettings.defaultFontFamily
     @AppStorage(EditorStyleSettings.fontSizeKey) private var fontSize: Double = EditorStyleSettings.defaultFontSize
 
@@ -59,6 +61,7 @@ struct MarkdownTextEditor: NSViewRepresentable {
 
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
         let textView = scrollView.documentView as! NSTextView
+        context.coordinator.parent = self
         applyEditorStyle(to: textView, coordinator: context.coordinator)
         guard !textView.hasMarkedText() else { return }
         guard textView.string != text else { return }
@@ -373,8 +376,30 @@ struct MarkdownTextEditor: NSViewRepresentable {
 
         func insertImageMarkdown(urls: [URL]) {
             guard let tv = textView else { return }
-            let markdown = urls.map { "![\($0.lastPathComponent)](\($0.path))" }.joined(separator: "\n")
-            insertMarkdownText(markdown, in: tv)
+            var references: [MarkdownImageReference] = []
+            var failures: [(URL, Error)] = []
+
+            for url in urls {
+                do {
+                    references += try MarkdownImageAssetManager.references(
+                        for: [url],
+                        documentURL: parent.documentURL
+                    )
+                } catch {
+                    failures.append((url, error))
+                }
+            }
+
+            if !references.isEmpty {
+                let markdown = references
+                    .map { "![\($0.altText)](\($0.markdownPath))" }
+                    .joined(separator: "\n")
+                insertMarkdownText(markdown, in: tv)
+            }
+
+            if !failures.isEmpty {
+                showImageInsertFailure(failures)
+            }
         }
 
         func insertImageMarkdown(name: String, path: String) {
@@ -436,6 +461,18 @@ struct MarkdownTextEditor: NSViewRepresentable {
         private func imageTmpDirectory() -> URL {
             let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
             return appSupport.appendingPathComponent("MarkdownEditor/.tmp", isDirectory: true)
+        }
+
+        private func showImageInsertFailure(_ failures: [(URL, Error)]) {
+            let details = failures
+                .map { url, error in "\(url.lastPathComponent): \(error.localizedDescription)" }
+                .joined(separator: "\n")
+            let alert = NSAlert()
+            alert.alertStyle = .warning
+            alert.messageText = "图片插入失败"
+            alert.informativeText = details
+            alert.addButton(withTitle: "确定")
+            alert.runModal()
         }
     }
 

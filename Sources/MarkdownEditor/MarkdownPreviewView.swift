@@ -4,6 +4,7 @@ import WebKit
 /// WKWebView wrapper — renders HTML produced by MarkdownProcessor.
 struct MarkdownPreviewView: NSViewRepresentable {
     let markdownText: String
+    let baseURL: URL?
     func makeCoordinator() -> Coordinator { Coordinator() }
 
     // CSS is loaded once and cached.
@@ -32,15 +33,25 @@ struct MarkdownPreviewView: NSViewRepresentable {
 
     func updateNSView(_ webView: WKWebView, context: Context) {
         let html = MarkdownProcessor.buildPage(markdown: markdownText, css: Self.css)
-        // Write to a temp file and use loadFileURL so WKWebView can load
-        // local images at arbitrary absolute paths (drag: original path, paste: .tmp dir)
-        let tmpURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("markdown_preview.html")
-        try? html.write(to: tmpURL, atomically: true, encoding: .utf8)
-        webView.loadFileURL(tmpURL, allowingReadAccessTo: URL(fileURLWithPath: "/"))
+        let previewHTML = Self.htmlForPreview(html, baseURL: baseURL)
+        let tmpURL = context.coordinator.previewFileURL
+
+        do {
+            try previewHTML.write(to: tmpURL, atomically: true, encoding: .utf8)
+            webView.loadFileURL(tmpURL, allowingReadAccessTo: URL(fileURLWithPath: "/"))
+        } catch {
+            webView.loadHTMLString(previewHTML, baseURL: baseURL)
+        }
     }
 
     final class Coordinator: NSObject, WKNavigationDelegate {
+        let previewFileURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("markdown_preview-\(UUID().uuidString).html")
+
+        deinit {
+            try? FileManager.default.removeItem(at: previewFileURL)
+        }
+
         func webView(_ webView: WKWebView,
                      decidePolicyFor navigationAction: WKNavigationAction,
                      decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
@@ -53,5 +64,28 @@ struct MarkdownPreviewView: NSViewRepresentable {
             NSWorkspace.shared.open(url)
             decisionHandler(.cancel)
         }
+    }
+
+    private static func htmlForPreview(_ html: String, baseURL: URL?) -> String {
+        guard let baseURL else { return html }
+
+        let directoryBaseURL = URL(fileURLWithPath: baseURL.path, isDirectory: true)
+        let baseTag = #"  <base href="\#(htmlAttributeEscaped(directoryBaseURL.absoluteString))">"#
+
+        if let headRange = html.range(of: "<head>") {
+            var result = html
+            result.insert(contentsOf: "\n\(baseTag)", at: headRange.upperBound)
+            return result
+        }
+
+        return baseTag + "\n" + html
+    }
+
+    private static func htmlAttributeEscaped(_ value: String) -> String {
+        value
+            .replacingOccurrences(of: "&", with: "&amp;")
+            .replacingOccurrences(of: "\"", with: "&quot;")
+            .replacingOccurrences(of: "<", with: "&lt;")
+            .replacingOccurrences(of: ">", with: "&gt;")
     }
 }
