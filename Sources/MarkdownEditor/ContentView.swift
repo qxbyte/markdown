@@ -187,7 +187,7 @@ private struct HeadingOutlineView: View {
         let longest = headings
             .map { estimatedRowWidth(for: $0) }
             .max() ?? 180
-        return (min(520, max(260, longest)) * 3 / 5).rounded()
+        return (min(520, max(260, longest)) * 3 / 5 * 1.3).rounded()
     }
 
     private func estimatedRowWidth(for heading: MarkdownHeading) -> CGFloat {
