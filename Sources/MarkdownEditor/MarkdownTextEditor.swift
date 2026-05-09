@@ -11,6 +11,7 @@ struct MarkdownTextEditor: NSViewRepresentable {
     let documentURL: URL?
     @AppStorage(EditorStyleSettings.fontFamilyKey) private var fontFamily: String = EditorStyleSettings.defaultFontFamily
     @AppStorage(EditorStyleSettings.fontSizeKey) private var fontSize: Double = EditorStyleSettings.defaultFontSize
+    @AppStorage(EditorStyleSettings.showLineNumbersKey) private var showLineNumbers: Bool = false
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
@@ -60,6 +61,12 @@ struct MarkdownTextEditor: NSViewRepresentable {
         scrollView.autohidesScrollers    = true
         scrollView.backgroundColor       = NSColor.textBackgroundColor
 
+        let rulerView = LineNumberRulerView(scrollView: scrollView, textView: textView)
+        scrollView.hasVerticalRuler = true
+        scrollView.hasHorizontalRuler = false
+        scrollView.verticalRulerView = rulerView
+        scrollView.rulersVisible = showLineNumbers
+
         applyEditorStyle(to: textView, coordinator: context.coordinator)
 
         return scrollView
@@ -69,6 +76,13 @@ struct MarkdownTextEditor: NSViewRepresentable {
         let textView = scrollView.documentView as! NSTextView
         context.coordinator.parent = self
         applyEditorStyle(to: textView, coordinator: context.coordinator)
+
+        if let rulerView = scrollView.verticalRulerView as? LineNumberRulerView {
+            rulerView.lineNumberFont = lineNumberFont()
+            scrollView.rulersVisible = showLineNumbers
+            rulerView.update()
+        }
+
         guard !textView.hasMarkedText() else { return }
         guard textView.string != text else {
             context.coordinator.applyScrollTargetIfNeeded(scrollView)
@@ -105,6 +119,10 @@ struct MarkdownTextEditor: NSViewRepresentable {
 
         init(_ parent: MarkdownTextEditor) { self.parent = parent }
 
+        private var lineNumberRulerView: LineNumberRulerView? {
+            textView?.enclosingScrollView?.verticalRulerView as? LineNumberRulerView
+        }
+
         deinit {
             if let monitor = keyMonitor {
                 NSEvent.removeMonitor(monitor)
@@ -128,6 +146,7 @@ struct MarkdownTextEditor: NSViewRepresentable {
                 highlighter?.highlight(storage)
             }
             parent.text = tv.string
+            lineNumberRulerView?.update()
             scheduleSelectionToolbar(for: tv)
         }
 
@@ -166,6 +185,7 @@ struct MarkdownTextEditor: NSViewRepresentable {
         @objc private func clipViewBoundsDidChange(_ notification: Notification) {
             hideSelectionToolbar()
             updateScrollRatio()
+            lineNumberRulerView?.needsDisplay = true
         }
 
         private func setupSelectionObserversIfNeeded(for textView: NSTextView) {
@@ -701,6 +721,10 @@ struct MarkdownTextEditor: NSViewRepresentable {
         if let storage = textView.textStorage {
             coordinator.highlighter?.highlight(storage)
         }
+        if let rulerView = textView.enclosingScrollView?.verticalRulerView as? LineNumberRulerView {
+            rulerView.lineNumberFont = lineNumberFont()
+            rulerView.update()
+        }
     }
 
     private func editorFont() -> NSFont {
@@ -710,6 +734,13 @@ struct MarkdownTextEditor: NSViewRepresentable {
         return NSFont(name: fontFamily, size: size)
             ?? NSFont(name: "JetBrains Mono", size: size)
             ?? NSFont(name: "JetBrainsMono-Regular", size: size)
+            ?? NSFont.monospacedSystemFont(ofSize: size, weight: .regular)
+    }
+
+    private func lineNumberFont() -> NSFont {
+        let clampedSize = max(EditorStyleSettings.minFontSize, min(EditorStyleSettings.maxFontSize, fontSize))
+        let size = max(10, CGFloat(clampedSize) * 0.82)
+        return NSFont(name: fontFamily, size: size)
             ?? NSFont.monospacedSystemFont(ofSize: size, weight: .regular)
     }
 }

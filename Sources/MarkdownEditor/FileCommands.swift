@@ -4,6 +4,7 @@ struct FileCommands: Commands {
     @FocusedValue(\.markdownDocument) private var focusedDocument
     @AppStorage(EditorStyleSettings.fontFamilyKey) private var editorFontFamily: String = EditorStyleSettings.defaultFontFamily
     @AppStorage(EditorStyleSettings.fontSizeKey) private var editorFontSize: Double = EditorStyleSettings.defaultFontSize
+    @AppStorage(EditorStyleSettings.showLineNumbersKey) private var showLineNumbers: Bool = false
     let appDelegate: AppDelegate
 
     var body: some Commands {
@@ -43,6 +44,11 @@ struct FileCommands: Commands {
                 appDelegate.showFindReplace()
             }
             .keyboardShortcut("f", modifiers: .command)
+        }
+
+        CommandMenu("View") {
+            Toggle("Show Line Numbers", isOn: $showLineNumbers)
+                .keyboardShortcut("l", modifiers: [.command, .shift])
         }
 
         CommandMenu("Font") {
