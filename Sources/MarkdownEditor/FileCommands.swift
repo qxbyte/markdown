@@ -38,6 +38,13 @@ struct FileCommands: Commands {
             .keyboardShortcut("s", modifiers: [.command, .shift])
         }
 
+        CommandGroup(replacing: .textEditing) {
+            Button("查找和替换…") {
+                appDelegate.showFindReplace()
+            }
+            .keyboardShortcut("f", modifiers: .command)
+        }
+
         CommandMenu("Font") {
             Menu("Choose Font") {
                 ForEach(EditorStyleSettings.fontCandidates, id: \.self) { family in
