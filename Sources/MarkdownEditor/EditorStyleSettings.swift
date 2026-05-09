@@ -3,6 +3,7 @@ import Foundation
 enum EditorStyleSettings {
     static let fontFamilyKey = "editorFontFamily"
     static let fontSizeKey = "editorFontSize"
+    static let showLineNumbersKey = "editorShowLineNumbers"
 
     static let defaultFontFamily = "JetBrains Mono"
     static let defaultFontSize = 14.0
