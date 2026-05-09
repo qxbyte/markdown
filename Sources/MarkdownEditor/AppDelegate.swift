@@ -23,6 +23,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var pendingURL: URL?
     private var windowsPendingClose: Set<ObjectIdentifier> = []
 
+    private let findReplaceState = FindReplaceState()
+    private var findReplacePanel: FindReplaceWindowPanel?
+
     func registerDocument(_ doc: MarkdownDocument) {
         if !documents.allObjects.contains(where: { $0 === doc }) {
             documents.add(doc)
@@ -117,6 +120,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 window.orderFrontRegardless()
             }
         }
+    }
+
+    // MARK: - Find & Replace
+
+    func showFindReplace() {
+        if findReplacePanel == nil {
+            findReplacePanel = FindReplaceWindowPanel(state: findReplaceState)
+        }
+        guard let panel = findReplacePanel else { return }
+
+        if !panel.isVisible {
+            if let mainWindow = NSApp.windows.first(where: { !($0 is NSPanel) && $0.isVisible }) {
+                let mf = mainWindow.frame
+                var pf = panel.frame
+                pf.origin.x = (mf.midX - pf.width / 2).rounded()
+                pf.origin.y = (mf.midY + 60).rounded()
+                panel.setFrame(pf, display: false)
+            } else {
+                panel.center()
+            }
+        }
+        panel.makeKeyAndOrderFront(nil)
     }
 
     // MARK: - 现代 macOS (10.13+) Finder 右键 / 双击 / 拖拽到 Dock 图标
