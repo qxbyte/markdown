@@ -1,6 +1,7 @@
 # Changelog
 
 ## [Unreleased]
+- sync scroll position between editor and preview (2026-05-10)
 
 ## [1.4.0] - 2026-05-10
 ### Added
