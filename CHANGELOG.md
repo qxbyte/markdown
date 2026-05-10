@@ -38,3 +38,4 @@
 - show word and character count in status bar (2026-05-10)
 - configurable auto-save interval in preferences (2026-05-10)
 - recent files submenu in File menu (2026-05-10)
+- restore cursor position after undo (2026-05-10)
