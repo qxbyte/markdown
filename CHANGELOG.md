@@ -34,3 +34,4 @@
 - add CONTRIBUTING guide for external contributors (2026-05-10)
 - expand tech-stack table with version numbers (2026-05-10)
 - export document to PDF via print subsystem (2026-05-10)
+- show word and character count in status bar (2026-05-10)
