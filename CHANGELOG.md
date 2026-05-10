@@ -24,3 +24,4 @@
 - simplify document navigation state machine (2026-05-10)
 - bump Swift package dependencies (2026-05-10)
 - remove legacy build phase from package script (2026-05-10)
+- delete stale icon assets from bundle (2026-05-10)
