@@ -39,3 +39,4 @@
 - configurable auto-save interval in preferences (2026-05-10)
 - recent files submenu in File menu (2026-05-10)
 - restore cursor position after undo (2026-05-10)
+- refresh outline panel on heading change (2026-05-10)
