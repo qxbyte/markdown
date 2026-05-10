@@ -29,3 +29,4 @@
 - integration test for find-replace round trip (2026-05-10)
 - snapshot tests for outline panel rendering (2026-05-10)
 - end-to-end export flow integration test (2026-05-10)
+- update README feature list for v1.4 (2026-05-10)
