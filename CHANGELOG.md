@@ -48,3 +48,4 @@
 - default save-as path to document directory (2026-05-10)
 - restore window frame on relaunch (2026-05-10)
 - debounce preview re-render on keystroke (2026-05-10)
+- cache syntax highlight tokens per line (2026-05-10)
