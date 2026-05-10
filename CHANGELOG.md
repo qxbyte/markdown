@@ -22,3 +22,4 @@
 - extract file open/save into FileCommands (2026-05-10)
 - consolidate color tokens into theme file (2026-05-10)
 - simplify document navigation state machine (2026-05-10)
+- bump Swift package dependencies (2026-05-10)
