@@ -79,8 +79,21 @@ struct MarkdownTextEditor: NSViewRepresentable {
 
         if let rulerView = scrollView.verticalRulerView as? LineNumberRulerView {
             rulerView.lineNumberFont = lineNumberFont()
+            let wasVisible = scrollView.rulersVisible
             scrollView.rulersVisible = showLineNumbers
             rulerView.update()
+            if wasVisible != showLineNumbers {
+                // Ruler visibility changed: the clip view resizes and the text container
+                // width is updated via widthTracksTextView. Force a synchronous layout
+                // pass so the text view redraws with the correct container width instead
+                // of briefly appearing blank.
+                if let tv = scrollView.documentView as? NSTextView,
+                   let lm = tv.layoutManager,
+                   let tc = tv.textContainer {
+                    lm.ensureLayout(for: tc)
+                    tv.setNeedsDisplay(tv.visibleRect)
+                }
+            }
         }
 
         guard !textView.hasMarkedText() else { return }

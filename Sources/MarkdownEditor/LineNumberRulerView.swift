@@ -50,6 +50,7 @@ final class LineNumberRulerView: NSRulerView {
         let string = textView.string as NSString
         let visibleRect = scrollView.contentView.bounds
         let insetY = textView.textContainerInset.height
+        let insetX = textView.textContainerInset.width
         let thickness = ruleThickness
 
         let attrs: [NSAttributedString.Key: Any] = [
@@ -67,7 +68,15 @@ final class LineNumberRulerView: NSRulerView {
             return
         }
 
-        let glyphRange = layoutManager.glyphRange(forBoundingRect: visibleRect, in: textContainer)
+        // scrollView.contentView.bounds is in textView coordinates; glyphRange(forBoundingRect:in:)
+        // expects text container coordinates, which are offset by textContainerInset.
+        let containerRect = NSRect(
+            x: visibleRect.minX - insetX,
+            y: visibleRect.minY - insetY,
+            width: visibleRect.width,
+            height: visibleRect.height
+        )
+        let glyphRange = layoutManager.glyphRange(forBoundingRect: containerRect, in: textContainer)
         guard glyphRange.length > 0 else { return }
 
         let firstCharIndex = layoutManager.characterIndexForGlyph(at: glyphRange.location)
