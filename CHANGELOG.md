@@ -44,3 +44,4 @@
 - align line numbers with wrapped text (2026-05-10)
 - code block background in dark mode (2026-05-10)
 - table overflow clipped in narrow window (2026-05-10)
+- resolve relative image paths correctly (2026-05-10)
