@@ -18,3 +18,5 @@
 ## [1.0.0] - 2025-12-01
 ### Added
 - Initial release
+
+- extract file open/save into FileCommands (2026-05-10)
