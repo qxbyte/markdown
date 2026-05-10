@@ -46,3 +46,4 @@
 - table overflow clipped in narrow window (2026-05-10)
 - resolve relative image paths correctly (2026-05-10)
 - default save-as path to document directory (2026-05-10)
+- restore window frame on relaunch (2026-05-10)
