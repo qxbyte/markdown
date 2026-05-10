@@ -46,7 +46,7 @@ struct FileCommands: Commands {
             .keyboardShortcut("f", modifiers: .command)
         }
 
-        CommandMenu("View") {
+        CommandGroup(after: .toolbar) {
             Toggle("Show Line Numbers", isOn: $showLineNumbers)
                 .keyboardShortcut("l", modifiers: [.command, .shift])
         }
