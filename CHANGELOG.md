@@ -25,3 +25,4 @@
 - bump Swift package dependencies (2026-05-10)
 - remove legacy build phase from package script (2026-05-10)
 - delete stale icon assets from bundle (2026-05-10)
+- unit tests for CommonMark edge cases (2026-05-10)
