@@ -50,4 +50,4 @@
 - debounce preview re-render on keystroke (2026-05-10)
 - cache syntax highlight tokens per line (2026-05-10)
 - defer outline load until panel is visible (2026-05-10)
-- move toolbar items into dedicated component (2026-05-10)
+- move toolbar items into dedicated component (2026-05-10)- code block background in dark mode (2026-05-10)
