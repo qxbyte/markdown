@@ -40,3 +40,4 @@
 - recent files submenu in File menu (2026-05-10)
 - restore cursor position after undo (2026-05-10)
 - refresh outline panel on heading change (2026-05-10)
+- preserve highlight across find-replace operations (2026-05-10)
