@@ -109,6 +109,11 @@ struct MarkdownTextEditor: NSViewRepresentable {
         if let storage = textView.textStorage {
             context.coordinator.highlighter?.highlight(storage)
         }
+        // widthTracksTextView updates the container width lazily; force a synchronous
+        // layout pass so the text is visible immediately instead of showing a blank area.
+        if let lm = textView.layoutManager, let tc = textView.textContainer {
+            lm.ensureLayout(for: tc)
+        }
         context.coordinator.isUpdating = false
         context.coordinator.applyScrollTargetIfNeeded(scrollView)
     }
