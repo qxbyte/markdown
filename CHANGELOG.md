@@ -32,3 +32,4 @@
 - update README feature list for v1.4 (2026-05-10)
 - add keyboard shortcuts reference table (2026-05-10)
 - add CONTRIBUTING guide for external contributors (2026-05-10)
+- expand tech-stack table with version numbers (2026-05-10)
