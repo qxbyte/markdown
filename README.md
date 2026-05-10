@@ -1,68 +1,72 @@
 # MarkdownEditor
 
-macOS 原生 Markdown 编辑器。
+macOS 原生 Markdown 编辑器，支持实时分屏预览、语法高亮、大纲面板和查找替换。
 
-[![下载最新版本](https://img.shields.io/badge/下载最新版本-Releases-2ea44f?style=for-the-badge&logo=github)](https://github.com/qxbyte/markdown/releases)
+**系统要求：macOS 13 或更高版本**
 
-## 技术栈
+---
 
-| 模块 | 技术 |
-|------|------|
-| UI 框架 | SwiftUI + AppKit (macOS 13+) |
-| Markdown 解析 | [Down](https://github.com/johnxnguyen/Down) (wraps cmark-gfm) |
-| 预览渲染 | WKWebView |
-| 编辑器 | NSTextView + 自定义 Markdown 语法高亮 |
-| 字体配置 | 内置多字体切换 + 字号调整（持久化） |
-| 样式 | `default.css`，移植自 IntelliJ Markdown Plugin |
+## 下载安装
 
-## 项目结构
+前往 [Releases 页面](https://github.com/qxbyte/markdown/releases) 下载最新版本。
 
-```
-Sources/MarkdownEditor/
-├── MarkdownEditorApp.swift   # App 入口 (@main)
-├── EditorStyleSettings.swift # 编辑器字体配置（字体族/字号）
-├── ContentView.swift         # 主布局：编辑器 / 预览 split view
-├── MarkdownDocument.swift    # 文档状态、文件读写
-├── MarkdownTextEditor.swift  # NSTextView 包装（编辑器侧）
-├── MarkdownPreviewView.swift # WKWebView 包装（预览侧）
-├── MarkdownProcessor.swift   # Markdown → HTML 转换
-├── FileCommands.swift        # 菜单命令（文件操作 + 字体设置）
-└── Resources/
-    └── default.css           # 预览样式（移植自 IntelliJ 插件）
-```
+### 安装方式
+
+**DMG（推荐）**
+
+1. 下载 `MarkdownEditor-x.x.x.dmg`
+2. 双击打开，将 `MarkdownEditor.app` 拖入 `Applications` 文件夹
+3. 首次启动时，右键点击图标选择「打开」以绕过 Gatekeeper 提示
+
+**PKG**
+
+1. 下载 `MarkdownEditor-x.x.x.pkg`
+2. 双击运行安装包，按提示完成安装
+
+---
+
+## 功能一览
+
+- 编辑 / 分屏预览 / 纯预览 三模式切换
+- 实时 Markdown 预览（GitHub Flavored Markdown）
+- 编辑器语法高亮
+- 大纲面板
+- 查找与替换
+- 行号显示
+- 字数与字符统计
+- PDF 导出
+- 自动保存
+- 多窗口 / 多标签独立文档
+- Light / Dark 模式自适应
+
+---
+
+## 快捷键
+
+| 功能 | 快捷键 |
+|------|--------|
+| 新建文件 | `⌘N` |
+| 打开文件 | `⌘O` |
+| 保存 | `⌘S` |
+| 另存为 | `⇧⌘S` |
+| 查找 | `⌘F` |
+| 查找并替换 | `⌥⌘F` |
+| 增大字号 | `⌘=` |
+| 减小字号 | `⌘-` |
+| 重置字号 | `⌘0` |
+
+---
 
 ## 字体设置
 
-- 菜单路径：`Font` -> `Choose Font`
-- 支持字体：JetBrains Mono / SF Mono / Menlo / Monaco / Courier New / Fira Code
-- 字号快捷键：
-  - `⌘=` 增大字号
-  - `⌘-` 减小字号
-  - `⌘0` 重置字号
-- 字体与字号使用 `@AppStorage` 持久化，重启应用后仍保持
+菜单路径：`Font › Choose Font`
 
-## 开发
+内置字体：JetBrains Mono · SF Mono · Menlo · Monaco · Courier New · Fira Code
 
-用 Xcode 打开 `Package.swift`：
+字体与字号在重启后保持不变。
 
-```bash
-open Package.swift
-# 或
-xed .
-```
+---
 
-首次打开 Xcode 会自动解析 Down 依赖，等待完成后选 `MarkdownEditor` Scheme 运行即可。
+## 版本历史
 
-## 功能
-
-- [x] Editor / Editor and Preview / Preview 三模式切换
-- [x] 实时分屏预览
-- [x] 编辑器语法高亮（标题、代码块、链接、粗斜体等）
-- [x] 编辑器字体选择与字号调整（持久化）
-- [x] Light / Dark mode 自适应
-- [x] GitHub Flavored Markdown（GFM）
-- [x] 新建 / 打开 / 保存 `.md` 文件
-- [x] 多窗口/多 tab 独立文档状态
-- [x] 新窗口置顶并级联偏移打开
-- [ ] 编辑器 / 预览滚动同步（TODO）
-- [ ] 预览代码高亮主题可配置（TODO）
+查看 [CHANGELOG](CHANGELOG.md) 了解各版本更新内容。

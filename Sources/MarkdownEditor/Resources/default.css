@@ -2,6 +2,7 @@
  * MarkdownEditor — default.css
  * Based on sindresorhus/github-markdown-css and IntelliJ IDEA Markdown Plugin styles.
  * Code font: JetBrains Mono (must be installed on the system).
+ * Last updated: 2026-05-10
  */
 
 /* ── CSS Variables (Light / Dark) ──────────────────────────────────────── */
@@ -365,3 +366,5 @@ body {
     background-color: rgba(68, 147, 248, 0.25);
   }
 }
+
+/* nav history fix */
