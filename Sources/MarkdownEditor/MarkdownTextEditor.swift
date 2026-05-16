@@ -109,10 +109,15 @@ struct MarkdownTextEditor: NSViewRepresentable {
         if let storage = textView.textStorage {
             context.coordinator.highlighter?.highlight(storage)
         }
-        // widthTracksTextView updates the container width lazily; force a synchronous
-        // layout pass so the text is visible immediately instead of showing a blank area.
+        // Flush any pending frame propagation (e.g. on first render with line numbers
+        // enabled, the ruler reserves 36pt of width that hasn't reached the text view
+        // yet) so widthTracksTextView resolves the real container width before layout.
+        // Without this, ensureLayout below would lay glyphs into a zero-width container
+        // and the editor would appear blank until the user interacts with it.
+        scrollView.layoutSubtreeIfNeeded()
         if let lm = textView.layoutManager, let tc = textView.textContainer {
             lm.ensureLayout(for: tc)
+            textView.setNeedsDisplay(textView.visibleRect)
         }
         context.coordinator.isUpdating = false
         context.coordinator.applyScrollTargetIfNeeded(scrollView)
