@@ -83,15 +83,19 @@ struct MarkdownTextEditor: NSViewRepresentable {
             scrollView.rulersVisible = showLineNumbers
             rulerView.update()
             if wasVisible != showLineNumbers {
-                // Ruler visibility changed: the clip view resizes and the text container
-                // width is updated via widthTracksTextView. Force a synchronous layout
-                // pass so the text view redraws with the correct container width instead
-                // of briefly appearing blank.
+                // Setting rulersVisible defers re-tiling; without flushing the layout
+                // here the text container is still at its old width when ensureLayout
+                // runs, leaving the editor area blank until the next interaction.
+                // Force tile + layout so container width is current before re-layout.
+                scrollView.tile()
+                scrollView.layoutSubtreeIfNeeded()
                 if let tv = scrollView.documentView as? NSTextView,
                    let lm = tv.layoutManager,
                    let tc = tv.textContainer {
+                    let fullRange = NSRange(location: 0, length: (tv.string as NSString).length)
+                    lm.invalidateLayout(forCharacterRange: fullRange, actualCharacterRange: nil)
                     lm.ensureLayout(for: tc)
-                    tv.setNeedsDisplay(tv.visibleRect)
+                    tv.setNeedsDisplay(tv.bounds)
                 }
             }
         }
