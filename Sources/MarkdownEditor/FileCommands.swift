@@ -47,14 +47,8 @@ struct FileCommands: Commands {
         }
 
         CommandGroup(after: .toolbar) {
-            Button {
+            Button(showLineNumbers ? "Hide Line Numbers" : "Show Line Numbers") {
                 showLineNumbers.toggle()
-            } label: {
-                if showLineNumbers {
-                    Label("Show Line Numbers", systemImage: "checkmark")
-                } else {
-                    Text("Show Line Numbers")
-                }
             }
             .keyboardShortcut("l", modifiers: [.command, .shift])
         }
