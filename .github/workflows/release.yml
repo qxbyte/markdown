@@ -39,19 +39,16 @@ jobs:
         run: |
           ./scripts/build-release-assets.sh "${{ steps.version.outputs.version }}"
 
-      - name: Ensure Release Exists
+      - name: Publish Release
         uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ steps.version.outputs.version }}
           name: ${{ steps.version.outputs.version }}
           draft: false
           prerelease: false
           generate_release_notes: true
-
-      - name: Upload Assets
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.version.outputs.version }}
           files: |
             dist/MarkdownEditor-${{ steps.version.outputs.version_no_v }}.dmg
             dist/MarkdownEditor-${{ steps.version.outputs.version_no_v }}.pkg
