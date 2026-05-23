@@ -83,39 +83,27 @@ struct MarkdownTextEditor: NSViewRepresentable {
             scrollView.rulersVisible = showLineNumbers
             rulerView.update()
             if wasVisible != showLineNumbers {
-                // Setting rulersVisible only schedules a re-tile; the clip view and
-                // documentView frames are not actually resized until AppKit's next
-                // layout pass after updateNSView returns. Forcing tile + ensureLayout
-                // inline races with that deferred propagation, so glyphs get laid
-                // into the old container width and the editor goes blank.
+                // When rulersVisible changes, the scroll view re-tiles and the
+                // clip view shrinks/grows. The text view (documentView) follows
+                // via autoresizingMask = .width, and widthTracksTextView keeps
+                // the text container in sync — but NSLayoutManager is not
+                // automatically told that the container's effective width
+                // changed, so cached glyph layout from the old width is reused
+                // and the editor goes blank (no glyphs in the new visible area).
                 //
-                // Defer the relayout to the next runloop tick. By then the scroll
-                // view has fully settled into its new geometry, the textView frame
-                // matches the new clip view bounds (autoresizingMask = .width), and
-                // widthTracksTextView has updated the container's effective width.
+                // The documented fix is textContainerChangedGeometry(_:): it
+                // invalidates the cached layout and re-flows against the
+                // current container geometry. Run it on the next runloop tick
+                // so AppKit's tile + autoresizing has fully settled first;
+                // running it inline would re-flow against the still-stale
+                // container width.
                 DispatchQueue.main.async { [weak scrollView, weak rulerView] in
                     guard let scrollView,
                           let tv = scrollView.documentView as? NSTextView,
                           let lm = tv.layoutManager,
                           let tc = tv.textContainer else { return }
-                    scrollView.tile()
-                    scrollView.layoutSubtreeIfNeeded()
-                    // Explicitly resize documentView to match the clip view width in
-                    // case autoresizing hasn't run yet — guarantees textContainer's
-                    // effective width is correct before glyph layout.
-                    let clipWidth = scrollView.contentView.bounds.width
-                    if abs(tv.frame.width - clipWidth) > 0.5 {
-                        tv.frame = NSRect(
-                            x: tv.frame.minX,
-                            y: tv.frame.minY,
-                            width: clipWidth,
-                            height: tv.frame.height
-                        )
-                    }
-                    let fullRange = NSRange(location: 0, length: (tv.string as NSString).length)
-                    lm.invalidateLayout(forCharacterRange: fullRange, actualCharacterRange: nil)
-                    lm.ensureLayout(for: tc)
-                    tv.setNeedsDisplay(tv.bounds)
+                    lm.textContainerChangedGeometry(tc)
+                    tv.needsDisplay = true
                     rulerView?.update()
                 }
             }
