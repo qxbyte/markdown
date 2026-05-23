@@ -47,8 +47,16 @@ struct FileCommands: Commands {
         }
 
         CommandGroup(after: .toolbar) {
-            Toggle("Show Line Numbers", isOn: $showLineNumbers)
-                .keyboardShortcut("l", modifiers: [.command, .shift])
+            Button {
+                showLineNumbers.toggle()
+            } label: {
+                if showLineNumbers {
+                    Label("Show Line Numbers", systemImage: "checkmark")
+                } else {
+                    Text("Show Line Numbers")
+                }
+            }
+            .keyboardShortcut("l", modifiers: [.command, .shift])
         }
 
         CommandMenu("Font") {
