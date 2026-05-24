@@ -15,6 +15,20 @@ struct ContentView: View {
         nonmutating set { viewModeRawValue = newValue.rawValue }
     }
 
+    /// Binding for the toolbar Picker — converts between the `String`-backed
+    /// `viewModeRawValue` and the `EditorViewMode` enum, and snapshots the
+    /// current scroll ratio before switching so the new mode resumes at the
+    /// same position.
+    private var viewModeBinding: Binding<EditorViewMode> {
+        Binding(
+            get: { viewMode },
+            set: { newValue in
+                scrollTarget = MarkdownScrollTarget(kind: .ratio(scrollRatio))
+                viewModeRawValue = newValue.rawValue
+            }
+        )
+    }
+
     /// Total line count: number of "\n"-separated components (1 for the empty
     /// document, matches the way line numbers are counted in `cursor.line`).
     private var totalLines: Int {
@@ -86,11 +100,16 @@ struct ContentView: View {
                 titleBarNavigation
             }
             ToolbarItem(placement: .primaryAction) {
-                HStack(spacing: 1) {
-                    modeButton(.editor, icon: "doc.plaintext")
-                    modeButton(.preview, icon: "doc.richtext")
+                Picker("视图模式", selection: viewModeBinding) {
+                    Image(systemName: "doc.plaintext")
+                        .help("Editor")
+                        .tag(EditorViewMode.editor)
+                    Image(systemName: "doc.richtext")
+                        .help("Preview")
+                        .tag(EditorViewMode.preview)
                 }
-                .padding(.horizontal, 1)
+                .pickerStyle(.segmented)
+                .labelsHidden()
             }
         }
         .onAppear {
@@ -149,7 +168,7 @@ struct ContentView: View {
     private var titleBarNavigation: some View {
         HStack(spacing: 8) {
             Text(document.displayName)
-                .font(.system(size: 11, weight: .semibold))
+                .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(.primary)
                 .lineLimit(1)
                 .truncationMode(.middle)
@@ -163,25 +182,21 @@ struct ContentView: View {
         Button {
             isOutlinePresented.toggle()
         } label: {
-            HStack(spacing: 4) {
+            HStack(spacing: 5) {
                 Image(systemName: "list.bullet.rectangle.portrait.fill")
-                    .font(.system(size: 10, weight: .medium))
+                    .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(.indigo.opacity(0.85))
                 Text(outlineTitle)
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(.system(size: 12, weight: .semibold))
                     .lineLimit(1)
                     .truncationMode(.middle)
                     .layoutPriority(1)
                     .frame(maxWidth: 170, alignment: .leading)
                 Image(systemName: "chevron.up.chevron.down")
-                    .font(.system(size: 7, weight: .semibold))
+                    .font(.system(size: 8, weight: .semibold))
                     .foregroundStyle(.secondary)
             }
             .padding(.horizontal, 3)
-            // macOS Sequoia draws its NSToolbarItem glass capsule only when the
-            // item's content is at least ~16pt tall — anything smaller and the
-            // capsule is suppressed entirely. Keep this at 16 so the capsule
-            // renders even though the inner font sizes are reduced.
             .frame(height: 16)
         }
         .buttonStyle(.plain)
@@ -194,23 +209,6 @@ struct ContentView: View {
         .help("文档结构")
     }
 
-    @ViewBuilder
-    private func modeButton(_ mode: EditorViewMode, icon: String) -> some View {
-        Button {
-            scrollTarget = MarkdownScrollTarget(kind: .ratio(scrollRatio))
-            viewMode = mode
-        } label: {
-            Image(systemName: icon)
-                .font(.system(size: 10, weight: viewMode == mode ? .bold : .regular))
-                .foregroundStyle(viewMode == mode ? Color.primary : Color.secondary)
-                // Need ≥ ~16pt content height for macOS Sequoia to render the
-                // NSToolbarItem glass capsule around the button — see the
-                // matching note on outlineButton above.
-                .frame(width: 22, height: 16)
-        }
-        .buttonStyle(.plain)
-        .help(mode.title)
-    }
 
     private func scrollDefaultsKey() -> String? {
         guard let fileURL = document.fileURL else { return nil }
