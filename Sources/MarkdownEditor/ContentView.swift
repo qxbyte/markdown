@@ -178,7 +178,11 @@ struct ContentView: View {
                     .foregroundStyle(.secondary)
             }
             .padding(.horizontal, 3)
-            .frame(height: 14)
+            // macOS Sequoia draws its NSToolbarItem glass capsule only when the
+            // item's content is at least ~16pt tall — anything smaller and the
+            // capsule is suppressed entirely. Keep this at 16 so the capsule
+            // renders even though the inner font sizes are reduced.
+            .frame(height: 16)
         }
         .buttonStyle(.plain)
         .popover(isPresented: $isOutlinePresented, arrowEdge: .top) {
@@ -199,7 +203,10 @@ struct ContentView: View {
             Image(systemName: icon)
                 .font(.system(size: 10, weight: viewMode == mode ? .bold : .regular))
                 .foregroundStyle(viewMode == mode ? Color.primary : Color.secondary)
-                .frame(width: 18, height: 12)
+                // Need ≥ ~16pt content height for macOS Sequoia to render the
+                // NSToolbarItem glass capsule around the button — see the
+                // matching note on outlineButton above.
+                .frame(width: 22, height: 16)
         }
         .buttonStyle(.plain)
         .help(mode.title)
