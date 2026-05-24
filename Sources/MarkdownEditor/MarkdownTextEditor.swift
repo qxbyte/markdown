@@ -41,6 +41,11 @@ struct MarkdownTextEditor: NSViewRepresentable {
         textView.autoresizingMask                     = [.width]
         textView.textContainer?.widthTracksTextView   = true
         textView.textContainer?.containerSize         = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+        // The ruler toggle (and any other source of width change) only causes a
+        // visible re-layout if the layout manager is told the container geometry
+        // changed *after* AppKit has finished resizing the document view. Enable
+        // frame change notifications here so the coordinator can hook in below.
+        textView.postsFrameChangedNotifications       = true
 
         // Wire up image drop / paste callbacks
         textView.onImagesDrop = { [weak coordinator = context.coordinator] urls in
@@ -83,29 +88,34 @@ struct MarkdownTextEditor: NSViewRepresentable {
             scrollView.rulersVisible = showLineNumbers
             rulerView.update()
             if wasVisible != showLineNumbers {
-                // When rulersVisible changes, the scroll view re-tiles and the
-                // clip view shrinks/grows. The text view (documentView) follows
-                // via autoresizingMask = .width, and widthTracksTextView keeps
-                // the text container in sync — but NSLayoutManager is not
-                // automatically told that the container's effective width
-                // changed, so cached glyph layout from the old width is reused
-                // and the editor goes blank (no glyphs in the new visible area).
-                //
-                // The documented fix is textContainerChangedGeometry(_:): it
-                // invalidates the cached layout and re-flows against the
-                // current container geometry. Run it on the next runloop tick
-                // so AppKit's tile + autoresizing has fully settled first;
-                // running it inline would re-flow against the still-stale
-                // container width.
-                DispatchQueue.main.async { [weak scrollView, weak rulerView] in
-                    guard let scrollView,
-                          let tv = scrollView.documentView as? NSTextView,
-                          let lm = tv.layoutManager,
-                          let tc = tv.textContainer else { return }
-                    lm.textContainerChangedGeometry(tc)
+                // Prior attempts on main (#111/#112/#113/#115) all targeted the
+                // toggle moment itself — sync tile, single async hop,
+                // textContainerChangedGeometry on the next runloop — and kept
+                // racing AppKit's deferred tile / autoresize, leaving the editor
+                // blank. Switch to a self-healing model: (a) push AppKit to a
+                // settled state synchronously, (b) make sure the document view's
+                // frame width really did follow the new clip view width, and (c)
+                // rely on the coordinator's frame change observer to invalidate
+                // cached glyph layout. setFrameSize fires
+                // frameDidChangeNotification synchronously, so by the time we
+                // return the layout has been invalidated against the new width.
+                scrollView.tile()
+                scrollView.layoutSubtreeIfNeeded()
+                if let tv = scrollView.documentView as? NSTextView {
+                    let targetWidth = scrollView.contentView.bounds.width
+                    if abs(tv.frame.width - targetWidth) > 0.5 {
+                        // Preserve the existing height. If the text view hasn't
+                        // been sized yet (initial layout race) fall back to the
+                        // clip view's height so we don't reproduce the zero-
+                        // height regression that 00ac512 reverted.
+                        let safeHeight = max(tv.frame.height, scrollView.contentView.bounds.height)
+                        tv.setFrameSize(NSSize(width: targetWidth, height: safeHeight))
+                    } else if let lm = tv.layoutManager, let tc = tv.textContainer {
+                        lm.textContainerChangedGeometry(tc)
+                    }
                     tv.needsDisplay = true
-                    rulerView?.update()
                 }
+                rulerView.update()
             }
         }
 
@@ -152,6 +162,8 @@ struct MarkdownTextEditor: NSViewRepresentable {
         private var pendingPopoverWorkItem: DispatchWorkItem?
         private var keyMonitor: Any?
         private weak var observedClipView: NSClipView?
+        private weak var observedFrameTextView: NSTextView?
+        private var lastObservedTextViewWidth: CGFloat = -1
 
         init(_ parent: MarkdownTextEditor) { self.parent = parent }
 
@@ -172,7 +184,46 @@ struct MarkdownTextEditor: NSViewRepresentable {
         func bind(textView: NSTextView) {
             self.textView = textView
             setupSelectionObserversIfNeeded(for: textView)
+            setupTextViewFrameObserverIfNeeded(for: textView)
             setupKeyMonitorIfNeeded()
+        }
+
+        private func setupTextViewFrameObserverIfNeeded(for textView: NSTextView) {
+            guard observedFrameTextView !== textView else { return }
+            if let previous = observedFrameTextView {
+                NotificationCenter.default.removeObserver(
+                    self,
+                    name: NSView.frameDidChangeNotification,
+                    object: previous
+                )
+            }
+            observedFrameTextView = textView
+            lastObservedTextViewWidth = textView.frame.width
+            textView.postsFrameChangedNotifications = true
+            NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(textViewFrameDidChange(_:)),
+                name: NSView.frameDidChangeNotification,
+                object: textView
+            )
+        }
+
+        @objc private func textViewFrameDidChange(_ notification: Notification) {
+            guard let tv = notification.object as? NSTextView else { return }
+            let newWidth = tv.frame.width
+            // Width hasn't changed → nothing to invalidate. (Frame change
+            // notifications also fire for height/origin changes during scroll.)
+            guard abs(newWidth - lastObservedTextViewWidth) > 0.5 else { return }
+            lastObservedTextViewWidth = newWidth
+            guard let lm = tv.layoutManager, let tc = tv.textContainer else { return }
+            // widthTracksTextView keeps the container's *containerSize* in sync,
+            // but the layout manager keeps glyph layout cached against the prior
+            // line-fragment width. Telling it the geometry changed forces a
+            // proper re-flow against the current width — without this the
+            // editor stays blank after the ruler toggle.
+            lm.textContainerChangedGeometry(tc)
+            tv.needsDisplay = true
+            lineNumberRulerView?.update()
         }
 
         func textDidChange(_ notification: Notification) {
