@@ -3,15 +3,25 @@ import AppKit
 import MarkdownEditorCore
 import UniformTypeIdentifiers
 
+/// Status-bar metrics derived from the text view's current selection.
+struct EditorCursorMetrics: Equatable {
+    /// Character offset of the insertion point (selection's start location).
+    var location: Int = 0
+    /// 1-based line number of the insertion point.
+    var line: Int = 1
+
+    static let zero = EditorCursorMetrics()
+}
+
 /// NSTextView wrapper — monospaced editor using JetBrains Mono.
 struct MarkdownTextEditor: NSViewRepresentable {
     @Binding var text: String
     @Binding var scrollRatio: Double
     @Binding var scrollTarget: MarkdownScrollTarget?
+    @Binding var cursor: EditorCursorMetrics
     let documentURL: URL?
     @AppStorage(EditorStyleSettings.fontFamilyKey) private var fontFamily: String = EditorStyleSettings.defaultFontFamily
     @AppStorage(EditorStyleSettings.fontSizeKey) private var fontSize: Double = EditorStyleSettings.defaultFontSize
-    @AppStorage(EditorStyleSettings.showLineNumbersKey) private var showLineNumbers: Bool = false
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
@@ -41,11 +51,6 @@ struct MarkdownTextEditor: NSViewRepresentable {
         textView.autoresizingMask                     = [.width]
         textView.textContainer?.widthTracksTextView   = true
         textView.textContainer?.containerSize         = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
-        // The ruler toggle (and any other source of width change) only causes a
-        // visible re-layout if the layout manager is told the container geometry
-        // changed *after* AppKit has finished resizing the document view. Enable
-        // frame change notifications here so the coordinator can hook in below.
-        textView.postsFrameChangedNotifications       = true
 
         // Wire up image drop / paste callbacks
         textView.onImagesDrop = { [weak coordinator = context.coordinator] urls in
@@ -66,12 +71,6 @@ struct MarkdownTextEditor: NSViewRepresentable {
         scrollView.autohidesScrollers    = true
         scrollView.backgroundColor       = NSColor.textBackgroundColor
 
-        let rulerView = LineNumberRulerView(scrollView: scrollView, textView: textView)
-        scrollView.hasVerticalRuler = true
-        scrollView.hasHorizontalRuler = false
-        scrollView.verticalRulerView = rulerView
-        scrollView.rulersVisible = showLineNumbers
-
         applyEditorStyle(to: textView, coordinator: context.coordinator)
 
         return scrollView
@@ -81,43 +80,6 @@ struct MarkdownTextEditor: NSViewRepresentable {
         let textView = scrollView.documentView as! NSTextView
         context.coordinator.parent = self
         applyEditorStyle(to: textView, coordinator: context.coordinator)
-
-        if let rulerView = scrollView.verticalRulerView as? LineNumberRulerView {
-            rulerView.lineNumberFont = lineNumberFont()
-            let wasVisible = scrollView.rulersVisible
-            scrollView.rulersVisible = showLineNumbers
-            rulerView.update()
-            if wasVisible != showLineNumbers {
-                // Prior attempts on main (#111/#112/#113/#115) all targeted the
-                // toggle moment itself — sync tile, single async hop,
-                // textContainerChangedGeometry on the next runloop — and kept
-                // racing AppKit's deferred tile / autoresize, leaving the editor
-                // blank. Switch to a self-healing model: (a) push AppKit to a
-                // settled state synchronously, (b) make sure the document view's
-                // frame width really did follow the new clip view width, and (c)
-                // rely on the coordinator's frame change observer to invalidate
-                // cached glyph layout. setFrameSize fires
-                // frameDidChangeNotification synchronously, so by the time we
-                // return the layout has been invalidated against the new width.
-                scrollView.tile()
-                scrollView.layoutSubtreeIfNeeded()
-                if let tv = scrollView.documentView as? NSTextView {
-                    let targetWidth = scrollView.contentView.bounds.width
-                    if abs(tv.frame.width - targetWidth) > 0.5 {
-                        // Preserve the existing height. If the text view hasn't
-                        // been sized yet (initial layout race) fall back to the
-                        // clip view's height so we don't reproduce the zero-
-                        // height regression that 00ac512 reverted.
-                        let safeHeight = max(tv.frame.height, scrollView.contentView.bounds.height)
-                        tv.setFrameSize(NSSize(width: targetWidth, height: safeHeight))
-                    } else if let lm = tv.layoutManager, let tc = tv.textContainer {
-                        lm.textContainerChangedGeometry(tc)
-                    }
-                    tv.needsDisplay = true
-                }
-                rulerView.update()
-            }
-        }
 
         guard !textView.hasMarkedText() else { return }
         guard textView.string != text else {
@@ -132,11 +94,9 @@ struct MarkdownTextEditor: NSViewRepresentable {
         if let storage = textView.textStorage {
             context.coordinator.highlighter?.highlight(storage)
         }
-        // Flush any pending frame propagation (e.g. on first render with line numbers
-        // enabled, the ruler reserves 36pt of width that hasn't reached the text view
-        // yet) so widthTracksTextView resolves the real container width before layout.
-        // Without this, ensureLayout below would lay glyphs into a zero-width container
-        // and the editor would appear blank until the user interacts with it.
+        // Flush any pending frame propagation before the layout pass so
+        // widthTracksTextView sees the final container width and ensureLayout
+        // doesn't lay glyphs into a stale geometry.
         scrollView.layoutSubtreeIfNeeded()
         if let lm = textView.layoutManager, let tc = textView.textContainer {
             lm.ensureLayout(for: tc)
@@ -144,6 +104,7 @@ struct MarkdownTextEditor: NSViewRepresentable {
         }
         context.coordinator.isUpdating = false
         context.coordinator.applyScrollTargetIfNeeded(scrollView)
+        context.coordinator.refreshCursorMetrics()
     }
 
     // MARK: - Coordinator
@@ -162,14 +123,8 @@ struct MarkdownTextEditor: NSViewRepresentable {
         private var pendingPopoverWorkItem: DispatchWorkItem?
         private var keyMonitor: Any?
         private weak var observedClipView: NSClipView?
-        private weak var observedFrameTextView: NSTextView?
-        private var lastObservedTextViewWidth: CGFloat = -1
 
         init(_ parent: MarkdownTextEditor) { self.parent = parent }
-
-        private var lineNumberRulerView: LineNumberRulerView? {
-            textView?.enclosingScrollView?.verticalRulerView as? LineNumberRulerView
-        }
 
         deinit {
             if let monitor = keyMonitor {
@@ -184,46 +139,7 @@ struct MarkdownTextEditor: NSViewRepresentable {
         func bind(textView: NSTextView) {
             self.textView = textView
             setupSelectionObserversIfNeeded(for: textView)
-            setupTextViewFrameObserverIfNeeded(for: textView)
             setupKeyMonitorIfNeeded()
-        }
-
-        private func setupTextViewFrameObserverIfNeeded(for textView: NSTextView) {
-            guard observedFrameTextView !== textView else { return }
-            if let previous = observedFrameTextView {
-                NotificationCenter.default.removeObserver(
-                    self,
-                    name: NSView.frameDidChangeNotification,
-                    object: previous
-                )
-            }
-            observedFrameTextView = textView
-            lastObservedTextViewWidth = textView.frame.width
-            textView.postsFrameChangedNotifications = true
-            NotificationCenter.default.addObserver(
-                self,
-                selector: #selector(textViewFrameDidChange(_:)),
-                name: NSView.frameDidChangeNotification,
-                object: textView
-            )
-        }
-
-        @objc private func textViewFrameDidChange(_ notification: Notification) {
-            guard let tv = notification.object as? NSTextView else { return }
-            let newWidth = tv.frame.width
-            // Width hasn't changed → nothing to invalidate. (Frame change
-            // notifications also fire for height/origin changes during scroll.)
-            guard abs(newWidth - lastObservedTextViewWidth) > 0.5 else { return }
-            lastObservedTextViewWidth = newWidth
-            guard let lm = tv.layoutManager, let tc = tv.textContainer else { return }
-            // widthTracksTextView keeps the container's *containerSize* in sync,
-            // but the layout manager keeps glyph layout cached against the prior
-            // line-fragment width. Telling it the geometry changed forces a
-            // proper re-flow against the current width — without this the
-            // editor stays blank after the ruler toggle.
-            lm.textContainerChangedGeometry(tc)
-            tv.needsDisplay = true
-            lineNumberRulerView?.update()
         }
 
         func textDidChange(_ notification: Notification) {
@@ -233,7 +149,7 @@ struct MarkdownTextEditor: NSViewRepresentable {
                 highlighter?.highlight(storage)
             }
             parent.text = tv.string
-            lineNumberRulerView?.update()
+            refreshCursorMetrics(for: tv)
             scheduleSelectionToolbar(for: tv)
         }
 
@@ -248,7 +164,41 @@ struct MarkdownTextEditor: NSViewRepresentable {
 
         func textViewDidChangeSelection(_ notification: Notification) {
             guard let tv = notification.object as? NSTextView else { return }
+            refreshCursorMetrics(for: tv)
             scheduleSelectionToolbar(for: tv)
+        }
+
+        /// Recompute the status-bar cursor metrics from the current selection.
+        func refreshCursorMetrics() {
+            guard let tv = textView else { return }
+            refreshCursorMetrics(for: tv)
+        }
+
+        private func refreshCursorMetrics(for tv: NSTextView) {
+            let selected = tv.selectedRange()
+            let text = tv.string as NSString
+            let safeLocation = min(max(0, selected.location), text.length)
+            // Count "\n" occurrences in the prefix [0, safeLocation) — that's
+            // how many line breaks precede the insertion point. Line numbers are
+            // 1-based, so add 1.
+            var line = 1
+            if safeLocation > 0 {
+                text.enumerateSubstrings(
+                    in: NSRange(location: 0, length: safeLocation),
+                    options: [.byLines, .substringNotRequired]
+                ) { _, _, _, _ in line += 1 }
+                // enumerateSubstrings counts the final line even without a trailing
+                // newline; clamp back to the actual newline count.
+                if safeLocation > 0,
+                   text.character(at: safeLocation - 1) != 0x0A {
+                    line -= 1
+                }
+            }
+            let newMetrics = EditorCursorMetrics(location: safeLocation, line: line)
+            guard newMetrics != parent.cursor else { return }
+            DispatchQueue.main.async { [weak self] in
+                self?.parent.cursor = newMetrics
+            }
         }
 
         func textView(_ textView: NSTextView, clickedOnLink link: Any, at charIndex: Int) -> Bool {
@@ -272,7 +222,6 @@ struct MarkdownTextEditor: NSViewRepresentable {
         @objc private func clipViewBoundsDidChange(_ notification: Notification) {
             hideSelectionToolbar()
             updateScrollRatio()
-            lineNumberRulerView?.needsDisplay = true
         }
 
         private func setupSelectionObserversIfNeeded(for textView: NSTextView) {
@@ -808,10 +757,6 @@ struct MarkdownTextEditor: NSViewRepresentable {
         if let storage = textView.textStorage {
             coordinator.highlighter?.highlight(storage)
         }
-        if let rulerView = textView.enclosingScrollView?.verticalRulerView as? LineNumberRulerView {
-            rulerView.lineNumberFont = lineNumberFont()
-            rulerView.update()
-        }
     }
 
     private func editorFont() -> NSFont {
@@ -821,13 +766,6 @@ struct MarkdownTextEditor: NSViewRepresentable {
         return NSFont(name: fontFamily, size: size)
             ?? NSFont(name: "JetBrains Mono", size: size)
             ?? NSFont(name: "JetBrainsMono-Regular", size: size)
-            ?? NSFont.monospacedSystemFont(ofSize: size, weight: .regular)
-    }
-
-    private func lineNumberFont() -> NSFont {
-        let clampedSize = max(EditorStyleSettings.minFontSize, min(EditorStyleSettings.maxFontSize, fontSize))
-        let size = max(10, CGFloat(clampedSize) * 0.82)
-        return NSFont(name: fontFamily, size: size)
             ?? NSFont.monospacedSystemFont(ofSize: size, weight: .regular)
     }
 }

@@ -8,10 +8,21 @@ struct ContentView: View {
     @State private var scrollTarget: MarkdownScrollTarget?
     @State private var isOutlinePresented = false
     @State private var viewModeRawValue: String = EditorViewMode.editor.rawValue
+    @State private var cursor: EditorCursorMetrics = .zero
 
     private var viewMode: EditorViewMode {
         get { EditorViewMode(rawValue: viewModeRawValue) ?? .editor }
         nonmutating set { viewModeRawValue = newValue.rawValue }
+    }
+
+    /// Total line count: number of "\n"-separated components (1 for the empty
+    /// document, matches the way line numbers are counted in `cursor.line`).
+    private var totalLines: Int {
+        max(1, document.text.components(separatedBy: "\n").count)
+    }
+
+    private var totalCharacters: Int {
+        document.text.count
     }
 
     private var headings: [MarkdownHeading] {
@@ -30,25 +41,29 @@ struct ContentView: View {
     }
 
     var body: some View {
-        Group {
-            switch viewMode {
-            case .editor:
-                MarkdownTextEditor(
-                    text: $document.text,
-                    scrollRatio: $scrollRatio,
-                    scrollTarget: $scrollTarget,
-                    documentURL: document.fileURL
-                )
-                    .frame(minWidth: 280, maxWidth: .infinity, maxHeight: .infinity)
-            case .preview:
-                MarkdownPreviewView(
-                    markdownText: document.text,
-                    baseURL: document.fileURL?.deletingLastPathComponent(),
-                    scrollRatio: $scrollRatio,
-                    scrollTarget: $scrollTarget
-                )
-                    .frame(minWidth: 280, maxWidth: .infinity, maxHeight: .infinity)
+        VStack(spacing: 0) {
+            Group {
+                switch viewMode {
+                case .editor:
+                    MarkdownTextEditor(
+                        text: $document.text,
+                        scrollRatio: $scrollRatio,
+                        scrollTarget: $scrollTarget,
+                        cursor: $cursor,
+                        documentURL: document.fileURL
+                    )
+                        .frame(minWidth: 280, maxWidth: .infinity, maxHeight: .infinity)
+                case .preview:
+                    MarkdownPreviewView(
+                        markdownText: document.text,
+                        baseURL: document.fileURL?.deletingLastPathComponent(),
+                        scrollRatio: $scrollRatio,
+                        scrollTarget: $scrollTarget
+                    )
+                        .frame(minWidth: 280, maxWidth: .infinity, maxHeight: .infinity)
+                }
             }
+            statusBar
         }
         .frame(minWidth: 650, minHeight: 450)
         .navigationTitle("")
@@ -60,6 +75,9 @@ struct ContentView: View {
                 resolvedWindow.toolbarStyle = .unifiedCompact
                 resolvedWindow.toolbar?.sizeMode = .small
                 resolvedWindow.toolbar?.displayMode = .iconOnly
+                // No separator line between toolbar and editor — makes the
+                // toolbar visually thinner by blending into the content area.
+                resolvedWindow.titlebarSeparatorStyle = .none
                 resolvedWindow.isDocumentEdited = document.isDirty
             }
         )
@@ -94,10 +112,44 @@ struct ContentView: View {
         }
     }
 
+    /// Bottom status bar — simple flat row of text with a `.bar` material
+    /// background and a thin top divider. No capsule decoration.
+    private var statusBar: some View {
+        HStack(spacing: 16) {
+            Spacer()
+            statusItem(label: "行", value: "\(totalLines)")
+            statusItem(label: "字符", value: "\(totalCharacters)")
+            if viewMode == .editor {
+                statusItem(label: "位置", value: "\(cursor.location)")
+                statusItem(label: "行", value: "\(cursor.line)")
+            }
+        }
+        .padding(.horizontal, 12)
+        .frame(height: 22)
+        .background(alignment: .top) {
+            ZStack(alignment: .top) {
+                Rectangle().fill(.bar)
+                Divider()
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func statusItem(label: String, value: String) -> some View {
+        HStack(spacing: 4) {
+            Text("\(label)：")
+                .foregroundStyle(.secondary)
+            Text(value)
+                .foregroundStyle(.primary)
+                .monospacedDigit()
+        }
+        .font(.system(size: 11))
+    }
+
     private var titleBarNavigation: some View {
         HStack(spacing: 8) {
             Text(document.displayName)
-                .font(.system(size: 13, weight: .semibold))
+                .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(.primary)
                 .lineLimit(1)
                 .truncationMode(.middle)
@@ -111,22 +163,22 @@ struct ContentView: View {
         Button {
             isOutlinePresented.toggle()
         } label: {
-            HStack(spacing: 5) {
+            HStack(spacing: 4) {
                 Image(systemName: "list.bullet.rectangle.portrait.fill")
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(.indigo.opacity(0.85))
                 Text(outlineTitle)
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(size: 10, weight: .semibold))
                     .lineLimit(1)
                     .truncationMode(.middle)
                     .layoutPriority(1)
                     .frame(maxWidth: 170, alignment: .leading)
                 Image(systemName: "chevron.up.chevron.down")
-                    .font(.system(size: 8, weight: .semibold))
+                    .font(.system(size: 7, weight: .semibold))
                     .foregroundStyle(.secondary)
             }
             .padding(.horizontal, 3)
-            .frame(height: 16)
+            .frame(height: 14)
         }
         .buttonStyle(.plain)
         .popover(isPresented: $isOutlinePresented, arrowEdge: .top) {
@@ -145,14 +197,11 @@ struct ContentView: View {
             viewMode = mode
         } label: {
             Image(systemName: icon)
-                .font(.system(size: 10, weight: .medium))
-                .frame(width: 18, height: 13)
-                .foregroundStyle(viewMode == mode ? .primary : .secondary)
-                .background(viewMode == mode ? Color.gray.opacity(0.25) : Color.clear)
-                .clipShape(RoundedRectangle(cornerRadius: 3))
+                .font(.system(size: 10, weight: viewMode == mode ? .bold : .regular))
+                .foregroundStyle(viewMode == mode ? Color.primary : Color.secondary)
+                .frame(width: 18, height: 12)
         }
         .buttonStyle(.plain)
-        .controlSize(.small)
         .help(mode.title)
     }
 
@@ -278,5 +327,25 @@ private enum EditorViewMode: String {
         case .preview:
             return "Preview"
         }
+    }
+}
+
+/// Bridges NSVisualEffectView so SwiftUI views can request the same chrome
+/// material the macOS toolbar uses (NSVisualEffectMaterial.titlebar).
+private struct VisualEffectBackground: NSViewRepresentable {
+    let material: NSVisualEffectView.Material
+    let blendingMode: NSVisualEffectView.BlendingMode
+
+    func makeNSView(context: Context) -> NSVisualEffectView {
+        let view = NSVisualEffectView()
+        view.material = material
+        view.blendingMode = blendingMode
+        view.state = .followsWindowActiveState
+        return view
+    }
+
+    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
+        nsView.material = material
+        nsView.blendingMode = blendingMode
     }
 }
