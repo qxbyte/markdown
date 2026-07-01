@@ -3,6 +3,14 @@
 ## [Unreleased]
 - sync scroll position between editor and preview (2026-05-10)
 
+## [2.0.22] - 2026-07-02
+### Fixed
+- Preview mode no longer clamps rendered content to a narrow, centered 920px
+  column. `.markdown-body` now fills the available width (`max-width: none`,
+  `margin: 0`) while keeping the 48px side padding as a comfortable margin, so
+  wide tables and content span the same full width as the editor pane instead of
+  being cut off with large empty gutters on both sides.
+
 ## [1.4.0] - 2026-05-10
 ### Added
 - Find and replace functionality

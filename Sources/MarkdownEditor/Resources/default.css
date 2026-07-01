@@ -68,8 +68,8 @@ body {
   font-size: 15px;
   line-height: 1.6;
   word-wrap: break-word;
-  max-width: 920px;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
   padding: 32px 48px 64px;
   color: var(--md-fg);
   background-color: var(--md-bg);
