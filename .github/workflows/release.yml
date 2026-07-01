@@ -20,7 +20,11 @@ concurrency:
 
 jobs:
   build-and-release:
-    runs-on: macos-14
+    # macos-15 (Sequoia) ships with the newer SDK macOS 15+ runtimes need to
+    # render the modern NSToolbarItem glass capsule. Building on macos-14
+    # produced binaries that silently fell back to the older toolbar chrome
+    # when run on macOS 15/26 hosts.
+    runs-on: macos-15
     timeout-minutes: 30
 
     steps:
