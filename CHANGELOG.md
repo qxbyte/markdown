@@ -3,6 +3,14 @@
 ## [Unreleased]
 - sync scroll position between editor and preview (2026-05-10)
 
+## [2.0.23] - 2026-07-02
+### Fixed
+- Wide tables no longer make the preview scroll horizontally. Tables now render
+  with `display: table; width: auto; max-width: 100%` and cells wrap
+  (`overflow-wrap: anywhere; word-break: break-word`), so a wide table shrinks to
+  fit the pane width instead of overflowing — the preview content width stays
+  equal to the window width at all realistic widths.
+
 ## [2.0.22] - 2026-07-02
 ### Fixed
 - Preview mode no longer clamps rendered content to a narrow, centered 920px
